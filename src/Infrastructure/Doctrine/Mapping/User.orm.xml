@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Table names carry the default `iam_` prefix for readability, but they are
+    authoritative only when `iam.table_prefix` is left at its default:
+    TablePrefixListener rewrites them at runtime from configuration.
+
+    XML rather than attributes on purpose — the aggregate in Domain/Model must
+    stay free of any `use Doctrine\...`, otherwise "Domain imports nothing from
+    Infrastructure" stops being true the day someone reads it.
+-->
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="AlexandreBulete\DddIamBundle\Domain\Model\User" table="iam_user">
+        <id name="id" type="iam_user_id"/>
+        <field name="email" type="iam_user_email" length="255" unique="true"/>
+        <field name="password" type="iam_user_password" length="255"/>
+        <field name="firstName" type="string" column="first_name" length="100" nullable="true"/>
+        <field name="lastName" type="string" column="last_name" length="100" nullable="true"/>
+        <field name="roles" type="iam_roles"/>
+        <field name="status" type="iam_user_status" length="20"/>
+        <field name="createdAt" type="datetime_immutable" column="created_at"/>
+        <field name="updatedAt" type="datetime_immutable" column="updated_at" nullable="true"/>
+        <field name="revokedAt" type="datetime_immutable" column="revoked_at" nullable="true"/>
+
+        <indexes>
+            <index name="idx_iam_user_status" columns="status"/>
+        </indexes>
+    </entity>
+</doctrine-mapping>

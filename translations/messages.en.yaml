@@ -1,0 +1,38 @@
+# Every key is namespaced under `iam.` so the bundle can never collide with a
+# project's own catalogue. A project overrides any of them by declaring the
+# same key in its own translations/ — application catalogues win over bundles.
+iam:
+    menu:
+        root: Identity
+
+    user:
+        index: Users
+        email: Email
+        password: Password
+        password_help: Leave blank to keep the current password
+        first_name: First name
+        last_name: Last name
+        roles: Roles
+        status: Status
+        # `status_active`, not `status.active`: `iam.user.status` is itself a
+        # label, and a key cannot be both a string and a parent node.
+        status_active: Active
+        status_suspended: Suspended
+        status_revoked: Revoked
+
+    role:
+        user: User
+        admin: Administrator
+        super_admin: Super administrator
+
+    audit:
+        index: Audit log
+        event_type: Event
+        user_id: User (id)
+        payload: Details (JSON)
+        occurred_at: Occurred at
+
+    security:
+        account_suspended: Your account is suspended. Contact an administrator.
+        account_revoked: Your account has been revoked.
+        account_inactive: Your account is not active.

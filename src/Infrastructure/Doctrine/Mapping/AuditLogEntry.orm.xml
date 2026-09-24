@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="AlexandreBulete\DddIamBundle\Domain\Model\AuditLogEntry" table="iam_audit_log">
+        <id name="id" type="ulid"/>
+        <field name="eventType" type="string" column="event_type" length="255"/>
+        <!--
+            Plain string, not iam_user_id: the audit trail must survive the user
+            row it describes. A real association would make the log deletable by
+            cascade, which is exactly what an audit log must not be.
+        -->
+        <field name="userId" type="string" column="user_id" length="40"/>
+        <field name="payload" type="text"/>
+        <field name="occurredAt" type="datetime_immutable" column="occurred_at"/>
+
+        <indexes>
+            <index name="idx_iam_audit_user" columns="user_id"/>
+            <index name="idx_iam_audit_event_type" columns="event_type"/>
+            <index name="idx_iam_audit_occurred_at" columns="occurred_at"/>
+        </indexes>
+    </entity>
+</doctrine-mapping>

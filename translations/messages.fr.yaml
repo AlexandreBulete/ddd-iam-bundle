@@ -1,0 +1,33 @@
+iam:
+    menu:
+        root: Identité
+
+    user:
+        index: Utilisateurs
+        email: Email
+        password: Mot de passe
+        password_help: Laisser vide pour conserver le mot de passe actuel
+        first_name: Prénom
+        last_name: Nom
+        roles: Rôles
+        status: Statut
+        status_active: Actif
+        status_suspended: Suspendu
+        status_revoked: Révoqué
+
+    role:
+        user: Utilisateur
+        admin: Administrateur
+        super_admin: Super administrateur
+
+    audit:
+        index: Journal d'audit
+        event_type: Événement
+        user_id: Utilisateur (id)
+        payload: Détails (JSON)
+        occurred_at: Survenu le
+
+    security:
+        account_suspended: Votre compte est suspendu. Contactez un administrateur.
+        account_revoked: Votre compte a été révoqué.
+        account_inactive: "Votre compte n'est pas actif."
