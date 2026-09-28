@@ -7,12 +7,15 @@ namespace AlexandreBulete\DddIamBundle;
 use AlexandreBulete\DddIamBundle\Domain\Model\AuditLogEntry;
 use AlexandreBulete\DddIamBundle\Domain\Model\User;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\Role;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\AuditLogEntryIdType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\EmailType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\PasswordType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\RoleSetType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\UserIdType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\UserStatusType;
+use Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
@@ -24,6 +27,17 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
  * in the Sylius back office, an audit trail and a bootstrap CLI — without
  * copying a single file. Everything a project legitimately differs on is
  * configuration; see the README for the full seam list.
+ *
+ * @phpstan-type IamConfig array{
+ *     user_class: class-string<User>,
+ *     table_prefix: string,
+ *     roles: array<mixed>,
+ *     default_roles: list<string>,
+ *     super_admin_role: string,
+ *     password_policy: array<string, int|bool>,
+ *     audit: array{enabled: bool},
+ *     admin: array{enabled: bool, grid_limits: list<int>},
+ * }
  */
 final class DddIamBundle extends AbstractBundle
 {
@@ -117,11 +131,14 @@ final class DddIamBundle extends AbstractBundle
     }
 
     /**
-     * @param array<string, mixed> $config
+     * @param array<mixed> $config
      */
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
-        $roles = self::mergeRoles($config['roles'] ?? []);
+        // The shape is guaranteed by the tree in configure(): the Config
+        // component has validated and defaulted every key by now.
+        /** @var IamConfig $config */
+        $roles = self::mergeRoles($config['roles']);
 
         $parameters = $container->parameters()
             ->set('iam.user_class', $config['user_class'])
@@ -151,6 +168,10 @@ final class DddIamBundle extends AbstractBundle
         if ($config['admin']['enabled']) {
             $container->import($this->getPath() . '/config/services_admin.php');
         }
+
+        if (self::migrationsEnabled($builder)) {
+            $container->import($this->getPath() . '/config/services_migrations.php');
+        }
     }
 
     public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
@@ -166,12 +187,20 @@ final class DddIamBundle extends AbstractBundle
         $adminEnabled = true;
 
         foreach ($configs as $config) {
-            $declaredRoles = array_replace($declaredRoles, $config['roles'] ?? []);
-            $userClass = $config['user_class'] ?? $userClass;
-            $adminEnabled = $config['admin']['enabled'] ?? $adminEnabled;
+            if (is_array($config['roles'] ?? null)) {
+                $declaredRoles = array_replace($declaredRoles, $config['roles']);
+            }
+            if (is_string($config['user_class'] ?? null)) {
+                $userClass = $config['user_class'];
+            }
+            $admin = $config['admin'] ?? null;
+            if (is_array($admin) && is_bool($admin['enabled'] ?? null)) {
+                $adminEnabled = $admin['enabled'];
+            }
         }
 
         $this->prependDoctrine($builder, $userClass);
+        $this->prependMigrations($builder);
         $this->prependSecurity($builder, self::mergeRoles($declaredRoles));
         $this->prependTranslator($builder);
 
@@ -190,6 +219,7 @@ final class DddIamBundle extends AbstractBundle
                     PasswordType::NAME => PasswordType::class,
                     UserStatusType::NAME => UserStatusType::class,
                     RoleSetType::NAME => RoleSetType::class,
+                    AuditLogEntryIdType::NAME => AuditLogEntryIdType::class,
                 ],
             ],
         ]);
@@ -230,6 +260,33 @@ final class DddIamBundle extends AbstractBundle
     }
 
     /**
+     * The bundle ships its own migrations as services (they need the table
+     * prefix), which DoctrineMigrationsBundle only looks up with this switch on.
+     * It adds a lookup, it changes nothing for the project's file migrations.
+     */
+    private function prependMigrations(ContainerBuilder $builder): void
+    {
+        if (!self::migrationsEnabled($builder)) {
+            return;
+        }
+
+        $builder->prependExtensionConfig('doctrine_migrations', ['enable_service_migrations' => true]);
+    }
+
+    /**
+     * Read from `kernel.bundles`, not hasExtension(): inside loadExtension() the
+     * builder is scoped to this extension alone, so hasExtension() would answer
+     * false there even with DoctrineMigrationsBundle enabled.
+     */
+    private static function migrationsEnabled(ContainerBuilder $builder): bool
+    {
+        /** @var array<string, class-string> $bundles */
+        $bundles = $builder->getParameter('kernel.bundles');
+
+        return in_array(DoctrineMigrationsBundle::class, $bundles, true);
+    }
+
+    /**
      * @param array<string, array{inherits: list<string>}> $roles
      */
     private function prependSecurity(ContainerBuilder $builder, array $roles): void
@@ -242,7 +299,7 @@ final class DddIamBundle extends AbstractBundle
                 continue;
             }
 
-            $hierarchy[Role::fromName((string) $name)->value()] = array_map(
+            $hierarchy[Role::fromName($name)->value()] = array_map(
                 static fn (string $parent): string => Role::fromName($parent)->value(),
                 $inherits,
             );
@@ -278,7 +335,12 @@ final class DddIamBundle extends AbstractBundle
     }
 
     /**
-     * @param array<string, array{inherits?: list<string>}|null> $declared
+     * Normalises the `iam.roles` node on top of DEFAULT_ROLES.
+     *
+     * Takes it raw: prependExtension() reads it before the config tree has
+     * validated anything. A malformed entry is rejected rather than guessed.
+     *
+     * @param array<mixed> $declared
      *
      * @return array<string, array{inherits: list<string>}>
      */
@@ -287,7 +349,20 @@ final class DddIamBundle extends AbstractBundle
         $normalized = [];
 
         foreach ($declared as $name => $definition) {
-            $normalized[$name] = ['inherits' => $definition['inherits'] ?? []];
+            $inherits = is_array($definition) ? ($definition['inherits'] ?? []) : [];
+            if (!is_string($name) || ($definition !== null && !is_array($definition)) || !is_array($inherits)) {
+                throw new InvalidConfigurationException(sprintf('iam.roles: invalid definition for role "%s".', $name));
+            }
+
+            $parents = [];
+            foreach ($inherits as $parent) {
+                if (!is_string($parent)) {
+                    throw new InvalidConfigurationException(sprintf('iam.roles.%s.inherits: role names must be strings.', $name));
+                }
+                $parents[] = $parent;
+            }
+
+            $normalized[$name] = ['inherits' => $parents];
         }
 
         return array_replace(self::DEFAULT_ROLES, $normalized);

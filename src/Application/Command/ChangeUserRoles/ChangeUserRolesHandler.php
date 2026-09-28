@@ -9,6 +9,7 @@ use AlexandreBulete\DddIamBundle\Domain\Exception\UserNotFoundException;
 use AlexandreBulete\DddIamBundle\Domain\Model\User;
 use AlexandreBulete\DddIamBundle\Domain\Repository\UserRepositoryInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\RoleCatalogInterface;
+use Psr\Clock\ClockInterface;
 
 #[AsCommandHandler]
 final readonly class ChangeUserRolesHandler
@@ -16,6 +17,7 @@ final readonly class ChangeUserRolesHandler
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private RoleCatalogInterface $roleCatalog,
+        private ClockInterface $clock,
     ) {}
 
     public function __invoke(ChangeUserRolesCommand $command): User
@@ -31,7 +33,7 @@ final readonly class ChangeUserRolesHandler
         // what a YAML file happens to declare today.
         $this->roleCatalog->assertKnown($command->roles);
 
-        $user->changeRoles($command->roles);
+        $user->changeRoles($command->roles, $this->clock->now());
 
         $this->userRepository->save($user);
 

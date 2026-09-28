@@ -47,7 +47,7 @@ final class AuditLogEntryResource implements ResourceInterface
         $separator = strrpos($eventType, '\\');
 
         return new self(
-            id: $entry->id,
+            id: $entry->id->value(),
             eventType: $eventType,
             // The FQCN is unreadable in a table cell; the short name is what an
             // admin scans for. Both are kept — the filter searches the FQCN.

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AlexandreBulete\DddIamBundle\Domain\Repository\UserRepositoryInterface;
+use AlexandreBulete\DddIamBundle\Domain\Service\IdentityGeneratorInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\DomainEventPublisherInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\EventSerializerInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\PasswordHasherInterface;
@@ -11,6 +12,7 @@ use AlexandreBulete\DddIamBundle\Domain\Service\RoleCatalogInterface;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\DoctrineUserRepository;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\ImmediateEventPublisher;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Listener\TablePrefixListener;
+use AlexandreBulete\DddIamBundle\Infrastructure\Identity\UlidIdentityGenerator;
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\ConfigurablePasswordPolicy;
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\IamUserProvider;
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\RoleCatalog;
@@ -44,10 +46,12 @@ return static function (ContainerConfigurator $container): void {
             $src . '/Infrastructure/Doctrine/Type',
             $src . '/Infrastructure/Doctrine/Mapping',
 
-            // Conditional layers — see services_audit.php / services_admin.php.
+            // Conditional layers — see services_audit.php / services_admin.php
+            // / services_migrations.php.
             $src . '/Application/Subscriber',
             $src . '/Application/Query/FindAuditLogs',
             $src . '/Infrastructure/Doctrine/DoctrineAuditLogEntryRepository.php',
+            $src . '/Infrastructure/Doctrine/Migrations',
             $src . '/Infrastructure/Sylius',
         ]);
 
@@ -60,6 +64,7 @@ return static function (ContainerConfigurator $container): void {
     $services->alias(EventSerializerInterface::class, JsonEventSerializer::class);
     $services->alias(DomainEventPublisherInterface::class, ImmediateEventPublisher::class);
     $services->alias(UserRepositoryInterface::class, DoctrineUserRepository::class);
+    $services->alias(IdentityGeneratorInterface::class, UlidIdentityGenerator::class);
 
     // ── Config-driven services ──────────────────────────────────────────────
     $services->set(RoleCatalog::class)

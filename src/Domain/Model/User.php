@@ -64,22 +64,28 @@ class User
         protected(set) ?\DateTimeImmutable $revokedAt,
     ) {}
 
+    /**
+     * Identity and time come from the caller (id generator, clock): the Domain
+     * never reads the system clock nor draws a random id itself.
+     */
     public static function create(
+        UserId $id,
         Email $email,
         Password $password,
         RoleSet $roles,
+        \DateTimeImmutable $createdAt,
         ?string $firstName = null,
         ?string $lastName = null,
     ): static {
         $user = new static(
-            id: UserId::generate(),
+            id: $id,
             email: $email,
             password: $password,
             firstName: $firstName,
             lastName: $lastName,
             roles: $roles,
             status: UserStatus::fromEnum(UserStatusEnum::ACTIVE),
-            createdAt: new \DateTimeImmutable(),
+            createdAt: $createdAt,
             updatedAt: null,
             revokedAt: null,
         );
@@ -95,7 +101,7 @@ class User
         return $user;
     }
 
-    public function rename(?string $firstName, ?string $lastName): void
+    public function rename(?string $firstName, ?string $lastName, \DateTimeImmutable $at): void
     {
         $this->assertNotRevoked('rename');
 
@@ -105,11 +111,11 @@ class User
 
         $this->firstName = $firstName;
         $this->lastName = $lastName;
-        $this->touch();
+        $this->touch($at);
         $this->recordEvent(new UserRenamed((string) $this->id, $firstName, $lastName));
     }
 
-    public function changeEmail(Email $email): void
+    public function changeEmail(Email $email, \DateTimeImmutable $at): void
     {
         $this->assertNotRevoked('change the email of');
 
@@ -118,16 +124,16 @@ class User
         }
 
         $this->email = $email;
-        $this->touch();
+        $this->touch($at);
         $this->recordEvent(new UserEmailChanged((string) $this->id, $email->value()));
     }
 
-    public function changePassword(Password $password): void
+    public function changePassword(Password $password, \DateTimeImmutable $at): void
     {
         $this->assertNotRevoked('change the password of');
 
         $this->password = $password;
-        $this->touch();
+        $this->touch($at);
         $this->recordEvent(new UserPasswordChanged((string) $this->id));
     }
 
@@ -142,7 +148,7 @@ class User
      * handler against {@see \AlexandreBulete\DddIamBundle\Domain\Service\RoleCatalogInterface}:
      * the catalogue is deployment configuration, not an aggregate invariant.
      */
-    public function changeRoles(RoleSet $roles): void
+    public function changeRoles(RoleSet $roles, \DateTimeImmutable $at): void
     {
         $this->assertNotRevoked('change the roles of');
 
@@ -152,7 +158,7 @@ class User
 
         $previous = $this->roles;
         $this->roles = $roles;
-        $this->touch();
+        $this->touch($at);
         $this->recordEvent(new UserRolesChanged(
             userId: (string) $this->id,
             roles: $roles->toStrings(),
@@ -160,7 +166,7 @@ class User
         ));
     }
 
-    public function suspend(): void
+    public function suspend(\DateTimeImmutable $at): void
     {
         $this->assertNotRevoked('suspend');
 
@@ -169,11 +175,11 @@ class User
         }
 
         $this->status = UserStatus::fromEnum(UserStatusEnum::SUSPENDED);
-        $this->touch();
+        $this->touch($at);
         $this->recordEvent(new UserSuspended((string) $this->id));
     }
 
-    public function reactivate(): void
+    public function reactivate(\DateTimeImmutable $at): void
     {
         $this->assertNotRevoked('reactivate');
 
@@ -182,7 +188,7 @@ class User
         }
 
         $this->status = UserStatus::fromEnum(UserStatusEnum::ACTIVE);
-        $this->touch();
+        $this->touch($at);
         $this->recordEvent(new UserReactivated((string) $this->id));
     }
 
@@ -194,15 +200,15 @@ class User
      * request is a different use case (scrubbing personal data in place), not
      * this one.
      */
-    public function revoke(): void
+    public function revoke(\DateTimeImmutable $at): void
     {
         if ($this->status->isRevoked()) {
             return; // idempotent
         }
 
         $this->status = UserStatus::fromEnum(UserStatusEnum::REVOKED);
-        $this->revokedAt = new \DateTimeImmutable();
-        $this->touch();
+        $this->revokedAt = $at;
+        $this->touch($at);
         $this->recordEvent(new UserRevoked((string) $this->id));
     }
 
@@ -222,8 +228,8 @@ class User
         }
     }
 
-    protected function touch(): void
+    protected function touch(\DateTimeImmutable $at): void
     {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = $at;
     }
 }

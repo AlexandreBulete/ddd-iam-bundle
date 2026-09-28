@@ -27,4 +27,15 @@ final class DoctrineAuditLogEntryRepository extends DoctrineRepository implement
     {
         return $this->em->find(self::ENTITY_CLASS, $id->value());
     }
+
+    /**
+     * Flushed right away: the logger runs inside the transaction of the user
+     * write it records (DoctrineUserRepository::save()), so the entry commits
+     * or rolls back with it.
+     */
+    public function add(AuditLogEntry $entry): void
+    {
+        $this->em->persist($entry);
+        $this->em->flush();
+    }
 }

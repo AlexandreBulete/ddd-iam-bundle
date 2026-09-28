@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 use AlexandreBulete\DddIamBundle\Application\Query\FindAuditLogs\FindAuditLogsHandler;
 use AlexandreBulete\DddIamBundle\Application\Subscriber\AuditLogger;
+use AlexandreBulete\DddIamBundle\Domain\Event\UserCreated;
+use AlexandreBulete\DddIamBundle\Domain\Event\UserEmailChanged;
+use AlexandreBulete\DddIamBundle\Domain\Event\UserPasswordChanged;
+use AlexandreBulete\DddIamBundle\Domain\Event\UserReactivated;
+use AlexandreBulete\DddIamBundle\Domain\Event\UserRenamed;
+use AlexandreBulete\DddIamBundle\Domain\Event\UserRevoked;
+use AlexandreBulete\DddIamBundle\Domain\Event\UserRolesChanged;
+use AlexandreBulete\DddIamBundle\Domain\Event\UserSuspended;
 use AlexandreBulete\DddIamBundle\Domain\Repository\AuditLogEntryRepositoryInterface;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\DoctrineAuditLogEntryRepository;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -29,5 +37,20 @@ return static function (ContainerConfigurator $container): void {
     $services->alias(AuditLogEntryRepositoryInterface::class, DoctrineAuditLogEntryRepository::class);
 
     $services->set(FindAuditLogsHandler::class);
-    $services->set(AuditLogger::class);
+
+    // Subscribed here, not by attribute: AuditLogger is Application code and
+    // stays framework-free. One line per event — see its docblock.
+    $logger = $services->set(AuditLogger::class);
+    foreach ([
+        UserCreated::class => 'onUserCreated',
+        UserRenamed::class => 'onUserRenamed',
+        UserEmailChanged::class => 'onUserEmailChanged',
+        UserPasswordChanged::class => 'onUserPasswordChanged',
+        UserRolesChanged::class => 'onUserRolesChanged',
+        UserSuspended::class => 'onUserSuspended',
+        UserReactivated::class => 'onUserReactivated',
+        UserRevoked::class => 'onUserRevoked',
+    ] as $event => $method) {
+        $logger->tag('kernel.event_listener', ['event' => $event, 'method' => $method]);
+    }
 };

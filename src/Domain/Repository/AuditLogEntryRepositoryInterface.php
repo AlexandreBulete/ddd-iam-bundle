@@ -12,4 +12,8 @@ use AlexandreBulete\DddIamBundle\Domain\Model\AuditLogEntry;
  */
 interface AuditLogEntryRepositoryInterface extends RepositoryInterface
 {
+    /**
+     * Append-only: an entry is added, never updated nor removed.
+     */
+    public function add(AuditLogEntry $entry): void;
 }

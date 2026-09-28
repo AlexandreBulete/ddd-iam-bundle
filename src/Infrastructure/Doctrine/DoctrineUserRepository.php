@@ -67,11 +67,13 @@ final class DoctrineUserRepository extends DoctrineRepository implements UserRep
 
     public function findOneByEmail(string $email): ?User
     {
-        return $this->query()
+        $user = $this->query()
             ->andWhere(self::ALIAS . '.email = :email')
             ->setParameter('email', $email)
             ->getQuery()
             ->getOneOrNullResult();
+
+        return $user instanceof User ? $user : null;
     }
 
     /**
@@ -79,6 +81,7 @@ final class DoctrineUserRepository extends DoctrineRepository implements UserRep
      */
     public function findByEmailLike(string $search, ?int $limit = null): array
     {
+        /** @var list<User> */
         return $this->query()
             ->andWhere('LOWER(' . self::ALIAS . '.email) LIKE LOWER(:email)')
             ->setParameter('email', '%' . trim($search) . '%')

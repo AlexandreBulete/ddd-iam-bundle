@@ -8,12 +8,14 @@ use AlexandreBulete\DddFoundation\Application\Command\AsCommandHandler;
 use AlexandreBulete\DddIamBundle\Domain\Exception\UserNotFoundException;
 use AlexandreBulete\DddIamBundle\Domain\Model\User;
 use AlexandreBulete\DddIamBundle\Domain\Repository\UserRepositoryInterface;
+use Psr\Clock\ClockInterface;
 
 #[AsCommandHandler]
 final readonly class RenameUserHandler
 {
     public function __construct(
         private UserRepositoryInterface $userRepository,
+        private ClockInterface $clock,
     ) {}
 
     public function __invoke(RenameUserCommand $command): User
@@ -24,7 +26,7 @@ final readonly class RenameUserHandler
             throw new UserNotFoundException($command->id);
         }
 
-        $user->rename($command->firstName, $command->lastName);
+        $user->rename($command->firstName, $command->lastName, $this->clock->now());
 
         $this->userRepository->save($user);
 

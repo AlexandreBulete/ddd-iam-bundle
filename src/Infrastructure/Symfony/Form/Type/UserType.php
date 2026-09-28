@@ -23,8 +23,6 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * The role choices come from {@see RoleCatalogInterface}, so a role added
  * under `iam.roles` shows up here with no code change — that is the whole
  * point of the catalogue.
- *
- * @extends AbstractType<UserResource>
  */
 final class UserType extends AbstractType
 {

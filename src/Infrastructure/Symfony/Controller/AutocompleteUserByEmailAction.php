@@ -32,7 +32,7 @@ final class AutocompleteUserByEmailAction
     )]
     public function __invoke(Request $request): JsonResponse
     {
-        $search = (string) $request->query->get('q', '');
+        $search = $request->query->getString('q');
         $limit = min($request->query->getInt('limit', 20), self::MAX_RESULTS);
 
         if (mb_strlen(trim($search)) < self::MIN_QUERY_LENGTH) {

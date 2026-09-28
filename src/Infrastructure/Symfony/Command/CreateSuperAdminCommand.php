@@ -111,10 +111,26 @@ final class CreateSuperAdminCommand extends Command
             return Command::INVALID;
         }
 
-        $roleNames = $input->getOption('role');
+        $roleNames = [];
+        foreach ((array) $input->getOption('role') as $roleName) {
+            if (!is_string($roleName)) {
+                $io->error('--role takes role names.');
+
+                return Command::INVALID;
+            }
+            $roleNames[] = $roleName;
+        }
         $roles = $roleNames === []
             ? RoleSet::fromNames([$this->superAdminRole])
             : RoleSet::fromNames($roleNames);
+
+        $firstName = $input->getOption('first-name');
+        $lastName = $input->getOption('last-name');
+        if (($firstName !== null && !is_string($firstName)) || ($lastName !== null && !is_string($lastName))) {
+            $io->error('--first-name and --last-name take a single value.');
+
+            return Command::INVALID;
+        }
 
         try {
             $this->roleCatalog->assertKnown($roles);
@@ -129,8 +145,8 @@ final class CreateSuperAdminCommand extends Command
             $user = $this->commandBus->dispatch(new CreateUserCommand(
                 email: $email,
                 password: new PlainPassword($passwordInput),
-                firstName: $input->getOption('first-name'),
-                lastName: $input->getOption('last-name'),
+                firstName: $firstName,
+                lastName: $lastName,
                 roles: $roles,
             ));
         } catch (PasswordPolicyViolation $e) {

@@ -14,11 +14,10 @@ use AlexandreBulete\DddIamBundle\Domain\Event\UserRevoked;
 use AlexandreBulete\DddIamBundle\Domain\Event\UserRolesChanged;
 use AlexandreBulete\DddIamBundle\Domain\Event\UserSuspended;
 use AlexandreBulete\DddIamBundle\Domain\Model\AuditLogEntry;
+use AlexandreBulete\DddIamBundle\Domain\Repository\AuditLogEntryRepositoryInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\EventSerializerInterface;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Clock\ClockInterface;
-use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
-use Symfony\Component\Uid\Ulid;
+use AlexandreBulete\DddIamBundle\Domain\Service\IdentityGeneratorInterface;
+use Psr\Clock\ClockInterface;
 
 /**
  * Materialises every IAM domain event into an {@see AuditLogEntry} row — the
@@ -28,10 +27,10 @@ use Symfony\Component\Uid\Ulid;
  * itself is conditional, so a deployment that does not want an audit trail
  * pays nothing for it (no listener, no table write).
  *
- * One `#[AsEventListener]` method per event rather than a single catch-all:
- * Symfony registers listeners by the event's FQCN, and being explicit means
- * adding an event to the bundle without adding it here is a visible omission
- * rather than a silent one.
+ * One method per event rather than a single catch-all, each subscribed in
+ * config/services_audit.php — not by attribute, which would tie this
+ * Application class to the framework. Adding an event to the bundle without
+ * adding it there is a visible omission rather than a silent one.
  *
  * Runs inside the same transaction as the aggregate write (see
  * {@see \AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\DoctrineUserRepository::save()}),
@@ -40,54 +39,47 @@ use Symfony\Component\Uid\Ulid;
 final readonly class AuditLogger
 {
     public function __construct(
-        private EntityManagerInterface $em,
+        private AuditLogEntryRepositoryInterface $entries,
         private EventSerializerInterface $serializer,
+        private IdentityGeneratorInterface $identities,
         private ClockInterface $clock,
     ) {}
 
-    #[AsEventListener]
     public function onUserCreated(UserCreated $event): void
     {
         $this->log($event, $event->userId);
     }
 
-    #[AsEventListener]
     public function onUserRenamed(UserRenamed $event): void
     {
         $this->log($event, $event->userId);
     }
 
-    #[AsEventListener]
     public function onUserEmailChanged(UserEmailChanged $event): void
     {
         $this->log($event, $event->userId);
     }
 
-    #[AsEventListener]
     public function onUserPasswordChanged(UserPasswordChanged $event): void
     {
         $this->log($event, $event->userId);
     }
 
-    #[AsEventListener]
     public function onUserRolesChanged(UserRolesChanged $event): void
     {
         $this->log($event, $event->userId);
     }
 
-    #[AsEventListener]
     public function onUserSuspended(UserSuspended $event): void
     {
         $this->log($event, $event->userId);
     }
 
-    #[AsEventListener]
     public function onUserReactivated(UserReactivated $event): void
     {
         $this->log($event, $event->userId);
     }
 
-    #[AsEventListener]
     public function onUserRevoked(UserRevoked $event): void
     {
         $this->log($event, $event->userId);
@@ -95,15 +87,12 @@ final readonly class AuditLogger
 
     private function log(DomainEvent $event, string $userId): void
     {
-        $entry = new AuditLogEntry(
-            id: new Ulid(),
+        $this->entries->add(AuditLogEntry::record(
+            id: $this->identities->nextAuditLogEntryId(),
             eventType: $event::class,
             userId: $userId,
             payload: $this->serializer->serialize($event),
             occurredAt: $this->clock->now(),
-        );
-
-        $this->em->persist($entry);
-        $this->em->flush();
+        ));
     }
 }

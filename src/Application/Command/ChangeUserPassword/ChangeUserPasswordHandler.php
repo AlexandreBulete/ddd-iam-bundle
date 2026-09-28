@@ -10,6 +10,7 @@ use AlexandreBulete\DddIamBundle\Domain\Model\User;
 use AlexandreBulete\DddIamBundle\Domain\Repository\UserRepositoryInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\PasswordHasherInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\PasswordPolicyInterface;
+use Psr\Clock\ClockInterface;
 
 #[AsCommandHandler]
 final readonly class ChangeUserPasswordHandler
@@ -18,6 +19,7 @@ final readonly class ChangeUserPasswordHandler
         private UserRepositoryInterface $userRepository,
         private PasswordHasherInterface $passwordHasher,
         private PasswordPolicyInterface $passwordPolicy,
+        private ClockInterface $clock,
     ) {}
 
     public function __invoke(ChangeUserPasswordCommand $command): User
@@ -30,7 +32,7 @@ final readonly class ChangeUserPasswordHandler
 
         $this->passwordPolicy->enforce($command->password);
 
-        $user->changePassword($this->passwordHasher->hash($command->password));
+        $user->changePassword($this->passwordHasher->hash($command->password), $this->clock->now());
 
         $this->userRepository->save($user);
 
