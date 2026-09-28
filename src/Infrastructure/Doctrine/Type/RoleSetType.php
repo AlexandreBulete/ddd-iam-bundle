@@ -20,6 +20,10 @@ use Doctrine\DBAL\Types\Type;
  *
  * The stored shape is a plain JSON array of `ROLE_*` strings, so the column
  * stays readable in psql and greppable in a dump.
+ *
+ * JSONB on PostgreSQL: the binary form is the one PostgreSQL recommends —
+ * parsed once on write, comparable and indexable, where `json` is stored as
+ * text and has no equality operator. Other platforms get their JSON type.
  */
 final class RoleSetType extends Type
 {
@@ -32,7 +36,7 @@ final class RoleSetType extends Type
 
     public function getSQLDeclaration(array $column, AbstractPlatform $platform): string
     {
-        return $platform->getJsonTypeDeclarationSQL($column);
+        return $platform->getJsonbTypeDeclarationSQL($column);
     }
 
     public function convertToDatabaseValue($value, AbstractPlatform $platform): ?string
@@ -66,13 +70,28 @@ final class RoleSetType extends Type
             $value = stream_get_contents($value);
         }
 
+        if (!is_string($value)) {
+            throw ValueNotConvertible::new($value, self::NAME, 'expected a JSON string');
+        }
+
         try {
-            /** @var list<string> $decoded */
-            $decoded = json_decode((string) $value, true, flags: JSON_THROW_ON_ERROR);
+            $decoded = json_decode($value, true, flags: JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
             throw ValueNotConvertible::new($value, self::NAME, $e->getMessage(), $e);
         }
 
-        return RoleSet::fromNames($decoded);
+        if (!is_array($decoded) || !array_is_list($decoded)) {
+            throw ValueNotConvertible::new($value, self::NAME, 'expected a JSON array of role names');
+        }
+
+        $names = [];
+        foreach ($decoded as $name) {
+            if (!is_string($name)) {
+                throw ValueNotConvertible::new($value, self::NAME, 'role names must be strings');
+            }
+            $names[] = $name;
+        }
+
+        return RoleSet::fromNames($names);
     }
 }

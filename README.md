@@ -60,12 +60,24 @@ Do **not** declare `security.role_hierarchy`: the bundle prepends it from
 Then:
 
 ```bash
-bin/console doctrine:migrations:diff && bin/console doctrine:migrations:migrate
+bin/console doctrine:migrations:migrate
 bin/console iam:create-super-admin --email=you@example.com
 ```
 
-The bundle ships no migration — it cannot know your database. `migrations:diff`
-picks up `iam_user` and `iam_audit_log`.
+**The bundle ships its own migrations** — never run `migrations:diff` for IAM
+tables, that would copy the bundle's schema into your history. They are
+registered as services (the bundle turns on DoctrineMigrationsBundle's
+`enable_service_migrations`) so they receive `iam.table_prefix`, and they are
+built with the Schema API, so the DDL follows your platform. Their versions
+live under `AlexandreBulete\DddIamBundle\…\Migrations` and sort before
+`DoctrineMigrations\…`: IAM tables exist before any project migration that
+references them.
+
+Do not set `enable_service_migrations: false` in your application: the IAM
+migrations would silently disappear.
+
+**Custom `user_class`**: the bundle migration creates its own columns; your
+subclass's extra columns go through your own `migrations:diff`.
 
 ## Where the line is
 
@@ -219,7 +231,8 @@ be modelled that way.
 **Roles are stored as JSON**, not a join table. They are read on every request,
 always loaded and written whole, and never queried from the role side. A join
 table would buy referential integrity against a role table that does not exist
-— the catalogue lives in configuration.
+— the catalogue lives in configuration. On PostgreSQL the column is `jsonb` (binary,
+comparable, indexable); other platforms get their JSON type.
 
 **Deleting a user revokes it.** The back office's delete button dispatches
 `RevokeUserCommand`. Erasing the row would leave the audit trail pointing at
@@ -235,6 +248,23 @@ post-authentication checks appear (password expiry, MFA enrolment).
 **Route names are pinned** via `AsResource(alias: 'iam.user')` →
 `iam_admin_user_index`. Derived names would change under anyone who moved a
 class.
+
+## Supported databases
+
+PostgreSQL, MySQL / MariaDB and SQLite. Every Doctrine type of the bundle maps
+onto a portable DBAL declaration, and the migration is written with the Schema
+API. The integration tests run the migration on all three and check that the
+result is exactly what the ORM mapping expects.
+
+## Development
+
+```bash
+composer install
+composer qa          # phpstan (max + strict rules), deptrac, phpunit
+```
+
+Integration tests use SQLite in memory unless `DDD_TEST_DATABASE_URL` points
+at a real database — CI runs them on PostgreSQL and MySQL too.
 
 ## Configuration reference
 

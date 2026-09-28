@@ -25,8 +25,13 @@
         <field name="updatedAt" type="datetime_immutable" column="updated_at" nullable="true"/>
         <field name="revokedAt" type="datetime_immutable" column="revoked_at" nullable="true"/>
 
+        <!--
+            Index names left to Doctrine, derived from the (prefixed) table
+            name: PostgreSQL index names are schema-wide, so a hand-written
+            `idx_iam_…` would collide as soon as `iam.table_prefix` changes.
+        -->
         <indexes>
-            <index name="idx_iam_user_status" columns="status"/>
+            <index columns="status"/>
         </indexes>
     </entity>
 </doctrine-mapping>
