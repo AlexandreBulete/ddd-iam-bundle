@@ -106,6 +106,12 @@ final class UserTest extends TestCase
         self::assertEquals(new \DateTimeImmutable('2026-02-02'), $user->updatedAt);
     }
 
+    #[Test]
+    public function the_login_email_is_case_insensitive(): void
+    {
+        self::assertTrue(Email::fromString(' Ada@Example.com ')->equals(Email::fromString('ada@example.com')));
+    }
+
     private static function user(): User
     {
         return User::create(

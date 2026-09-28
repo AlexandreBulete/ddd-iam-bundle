@@ -10,6 +10,9 @@ use AlexandreBulete\DddFoundation\Domain\Repository\RepositoryInterface;
 use AlexandreBulete\DddIamBundle\Domain\Model\User;
 use AlexandreBulete\DddIamBundle\Domain\Repository\UserRepositoryInterface;
 
+/**
+ * @extends QueryCollectionHandler<User>
+ */
 #[AsQueryHandler]
 final readonly class FindUsersHandler extends QueryCollectionHandler
 {

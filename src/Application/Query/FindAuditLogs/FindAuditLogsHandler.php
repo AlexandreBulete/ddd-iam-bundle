@@ -10,6 +10,9 @@ use AlexandreBulete\DddFoundation\Domain\Repository\RepositoryInterface;
 use AlexandreBulete\DddIamBundle\Domain\Model\AuditLogEntry;
 use AlexandreBulete\DddIamBundle\Domain\Repository\AuditLogEntryRepositoryInterface;
 
+/**
+ * @extends QueryCollectionHandler<AuditLogEntry>
+ */
 #[AsQueryHandler]
 final readonly class FindAuditLogsHandler extends QueryCollectionHandler
 {
