@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor;
 
 use AlexandreBulete\DddFoundation\Application\Command\CommandBusInterface;
+use AlexandreBulete\DddFoundation\Application\Query\QueryBusInterface;
 use AlexandreBulete\DddIamBundle\Application\Command\ChangeUserEmail\ChangeUserEmailCommand;
 use AlexandreBulete\DddIamBundle\Application\Command\ChangeUserPassword\ChangeUserPasswordCommand;
 use AlexandreBulete\DddIamBundle\Application\Command\ChangeUserRoles\ChangeUserRolesCommand;
 use AlexandreBulete\DddIamBundle\Application\Command\RenameUser\RenameUserCommand;
+use AlexandreBulete\DddIamBundle\Application\Query\FindUser\FindUserQuery;
 use AlexandreBulete\DddIamBundle\Application\Service\UserStatusChanger;
 use AlexandreBulete\DddIamBundle\Domain\Model\User;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\Email;
@@ -25,15 +27,17 @@ use Webmozart\Assert\Assert;
 /**
  * Maps one "edit user" form submission onto the named use cases it implies.
  *
- * Every command is dispatched unconditionally where it is safe to do so: the
- * aggregate is idempotent, so re-sending an unchanged name records nothing.
- * That keeps this class free of change detection, which would otherwise
- * duplicate — and eventually contradict — the rules inside the aggregate.
+ * A form submits every field; only what the user changed becomes a command.
+ * Each use case is authorized and journaled on its own: re-sending an
+ * unchanged name would require `iam.rename_user` from someone who only
+ * changed roles, and journal a rename that never happened. The comparisons
+ * use the value objects' equality, so no rule of the aggregate is duplicated.
  */
 final readonly class UpdateUserProcessor implements ProcessorInterface
 {
     public function __construct(
         private CommandBusInterface $commandBus,
+        private QueryBusInterface $queryBus,
         private UserStatusChanger $statusChanger,
     ) {}
 
@@ -45,13 +49,18 @@ final readonly class UpdateUserProcessor implements ProcessorInterface
         $userId = UserId::fromUlid($data->id);
 
         /** @var User $user */
-        $user = $this->commandBus->dispatch(new RenameUserCommand(
-            id: $userId,
-            firstName: $data->firstName,
-            lastName: $data->lastName,
-        ));
+        $user = $this->queryBus->ask(new FindUserQuery($userId));
 
-        if ($data->email !== null) {
+        if ($data->firstName !== $user->firstName || $data->lastName !== $user->lastName) {
+            /** @var User $user */
+            $user = $this->commandBus->dispatch(new RenameUserCommand(
+                id: $userId,
+                firstName: $data->firstName,
+                lastName: $data->lastName,
+            ));
+        }
+
+        if ($data->email !== null && !$user->email->equals(new Email($data->email))) {
             /** @var User $user */
             $user = $this->commandBus->dispatch(new ChangeUserEmailCommand(
                 id: $userId,
@@ -70,11 +79,14 @@ final readonly class UpdateUserProcessor implements ProcessorInterface
             ));
         }
 
-        /** @var User $user */
-        $user = $this->commandBus->dispatch(new ChangeUserRolesCommand(
-            id: $userId,
-            roles: RoleSet::fromNames($data->roles),
-        ));
+        $roles = RoleSet::fromNames($data->roles);
+        if (!$roles->equals($user->roles)) {
+            /** @var User $user */
+            $user = $this->commandBus->dispatch(new ChangeUserRolesCommand(
+                id: $userId,
+                roles: $roles,
+            ));
+        }
 
         if ($data->status !== null) {
             $user = $this->statusChanger->changeTo($user, $data->status);

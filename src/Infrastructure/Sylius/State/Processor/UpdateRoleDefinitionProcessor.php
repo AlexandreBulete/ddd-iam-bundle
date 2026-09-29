@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor;
 
 use AlexandreBulete\DddFoundation\Application\Command\CommandBusInterface;
+use AlexandreBulete\DddFoundation\Application\Query\QueryBusInterface;
 use AlexandreBulete\DddIamBundle\Application\Command\ChangeRolePermissions\ChangeRolePermissionsCommand;
 use AlexandreBulete\DddIamBundle\Application\Command\RelabelRole\RelabelRoleCommand;
+use AlexandreBulete\DddIamBundle\Application\Query\FindRoleDefinition\FindRoleDefinitionQuery;
 use AlexandreBulete\DddIamBundle\Domain\Model\RoleDefinition;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\PermissionSet;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\RoleDefinitionId;
@@ -18,13 +20,16 @@ use Symfony\Component\Uid\Ulid;
 use Webmozart\Assert\Assert;
 
 /**
- * One command per intention, the aggregate deciding what actually changed —
- * like UpdateUserProcessor. The system role has no permissions field.
+ * A form submits every field; only what the user changed becomes a command —
+ * like UpdateUserProcessor. An untouched field must not be journaled as an
+ * action, nor require a permission the user did not use. The system role has
+ * no permissions field.
  */
 final readonly class UpdateRoleDefinitionProcessor implements ProcessorInterface
 {
     public function __construct(
         private CommandBusInterface $commandBus,
+        private QueryBusInterface $queryBus,
     ) {}
 
     public function process(mixed $data, Operation $operation, Context $context): RoleDefinitionResource
@@ -36,11 +41,17 @@ final readonly class UpdateRoleDefinitionProcessor implements ProcessorInterface
         $id = RoleDefinitionId::fromUlid($data->id);
 
         /** @var RoleDefinition $definition */
-        $definition = $this->commandBus->dispatch(new RelabelRoleCommand($id, $data->label));
+        $definition = $this->queryBus->ask(new FindRoleDefinitionQuery($id));
 
-        if (!$definition->system) {
+        if ($data->label !== $definition->label) {
             /** @var RoleDefinition $definition */
-            $definition = $this->commandBus->dispatch(new ChangeRolePermissionsCommand($id, PermissionSet::of($data->permissions)));
+            $definition = $this->commandBus->dispatch(new RelabelRoleCommand($id, $data->label));
+        }
+
+        $permissions = PermissionSet::of($data->permissions);
+        if (!$definition->system && !$permissions->equals($definition->permissions)) {
+            /** @var RoleDefinition $definition */
+            $definition = $this->commandBus->dispatch(new ChangeRolePermissionsCommand($id, $permissions));
         }
 
         return RoleDefinitionResource::fromModel($definition);
