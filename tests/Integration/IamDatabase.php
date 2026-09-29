@@ -8,10 +8,15 @@ use AlexandreBulete\DddIamBundle\Domain\Model\AuditLogEntry;
 use AlexandreBulete\DddIamBundle\Domain\Model\User;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Listener\TablePrefixListener;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Migrations\Version20260928120000;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Migrations\Version20261001120000;
+use AlexandreBulete\DddIamBundle\Domain\Model\RoleDefinition;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\AuditLogEntryIdType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\EmailType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\PasswordType;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\PermissionSetType;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\RoleDefinitionIdType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\RoleSetType;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\RoleType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\UserIdType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\UserStatusType;
 use Doctrine\Common\EventManager;
@@ -41,6 +46,7 @@ final class IamDatabase
     private const TABLES = [
         User::class => 'user',
         AuditLogEntry::class => 'audit_log',
+        RoleDefinition::class => 'role',
     ];
 
     public static function migrated(string $prefix): EntityManagerInterface
@@ -86,20 +92,23 @@ final class IamDatabase
     }
 
     /**
-     * What `doctrine:migrations:migrate` does for a Schema API migration:
-     * diff the introspected schema against the one up() describes.
+     * What `doctrine:migrations:migrate` does for Schema API migrations, in
+     * order: diff the introspected schema against the one up() describes,
+     * then postUp() (seed data).
      */
     private static function runMigration(Connection $connection, string $prefix): void
     {
-        $schemaManager = $connection->createSchemaManager();
-        $from = $schemaManager->introspectSchema();
-        $to = clone $from;
+        foreach ([Version20260928120000::class, Version20261001120000::class] as $class) {
+            $migration = new $class($connection, new NullLogger(), $prefix);
+            $schemaManager = $connection->createSchemaManager();
+            $from = $schemaManager->introspectSchema();
+            $to = clone $from;
 
-        (new Version20260928120000($connection, new NullLogger(), $prefix))->up($to);
-
-        $diff = $schemaManager->createComparator()->compareSchemas($from, $to);
-        foreach ($connection->getDatabasePlatform()->getAlterSchemaSQL($diff) as $sql) {
-            $connection->executeStatement($sql);
+            $migration->up($to);
+            foreach ($connection->getDatabasePlatform()->getAlterSchemaSQL($schemaManager->createComparator()->compareSchemas($from, $to)) as $sql) {
+                $connection->executeStatement($sql);
+            }
+            $migration->postUp($to);
         }
     }
 
@@ -112,6 +121,9 @@ final class IamDatabase
             UserStatusType::NAME => UserStatusType::class,
             RoleSetType::NAME => RoleSetType::class,
             AuditLogEntryIdType::NAME => AuditLogEntryIdType::class,
+            RoleType::NAME => RoleType::class,
+            RoleDefinitionIdType::NAME => RoleDefinitionIdType::class,
+            PermissionSetType::NAME => PermissionSetType::class,
         ] as $name => $class) {
             if (!Type::hasType($name)) {
                 Type::addType($name, $class);

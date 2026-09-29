@@ -9,28 +9,18 @@ use AlexandreBulete\DddIamBundle\Domain\ValueObject\Role;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\RoleSet;
 
 /**
- * Domain port — the set of roles this deployment recognises.
- *
- * This is the seam that makes the bundle reusable without a fork: the bundle
- * ships `user`, `admin` and `super_admin`, and a project adds its own under
- * `iam.roles`. Everything downstream — the admin form choices, the grid
- * filter, `security.role_hierarchy` — reads from here rather than from a
- * hardcoded list.
+ * Domain port — the roles that exist: those defined in the back office, plus
+ * the system role super_admin (ADR 0008). Everything downstream — the user
+ * form choices, the grid filter — reads from here.
  */
 interface RoleCatalogInterface
 {
     /**
-     * Every declared role, bundle defaults and project additions alike.
+     * Every defined role, super_admin included.
      */
     public function all(): RoleSet;
 
     public function has(Role $role): bool;
-
-    /**
-     * The roles granted to a user created without an explicit set
-     * (`iam.default_roles`).
-     */
-    public function defaults(): RoleSet;
 
     /**
      * @throws UnknownRoleException if any role is not declared

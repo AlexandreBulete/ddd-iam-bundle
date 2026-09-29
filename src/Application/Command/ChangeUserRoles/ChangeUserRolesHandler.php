@@ -8,6 +8,7 @@ use AlexandreBulete\DddFoundation\Application\Command\AsCommandHandler;
 use AlexandreBulete\DddIamBundle\Domain\Exception\UserNotFoundException;
 use AlexandreBulete\DddIamBundle\Domain\Model\User;
 use AlexandreBulete\DddIamBundle\Domain\Repository\UserRepositoryInterface;
+use AlexandreBulete\DddIamBundle\Domain\Service\GrantPolicyInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\RoleCatalogInterface;
 use Psr\Clock\ClockInterface;
 
@@ -18,6 +19,7 @@ final readonly class ChangeUserRolesHandler
         private UserRepositoryInterface $userRepository,
         private RoleCatalogInterface $roleCatalog,
         private ClockInterface $clock,
+        private GrantPolicyInterface $grantPolicy,
     ) {}
 
     public function __invoke(ChangeUserRolesCommand $command): User
@@ -28,10 +30,13 @@ final readonly class ChangeUserRolesHandler
             throw new UserNotFoundException($command->id);
         }
 
-        // Checked here rather than in the aggregate: the catalogue is
-        // deployment configuration, and a Domain invariant must not depend on
-        // what a YAML file happens to declare today.
+        // Checked here rather than in the aggregate: which roles exist is
+        // data (the role definitions), not an invariant of the user.
         $this->roleCatalog->assertKnown($command->roles);
+
+        // Taking a role away changes access as much as granting one: whoever
+        // acts must hold both the new and the previous roles' permissions.
+        $this->grantPolicy->assertMayAssign($command->roles->union($user->roles));
 
         $user->changeRoles($command->roles, $this->clock->now());
 

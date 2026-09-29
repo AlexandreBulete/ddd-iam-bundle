@@ -2,24 +2,31 @@
 
 declare(strict_types=1);
 
+use AlexandreBulete\DddIamBundle\Domain\Repository\RoleDefinitionRepositoryInterface;
 use AlexandreBulete\DddIamBundle\Domain\Repository\UserRepositoryInterface;
-use AlexandreBulete\DddIamBundle\Domain\Service\IdentityGeneratorInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\DomainEventPublisherInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\EventSerializerInterface;
+use AlexandreBulete\DddIamBundle\Domain\Service\GrantPolicyInterface;
+use AlexandreBulete\DddIamBundle\Domain\Service\IdentityGeneratorInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\PasswordHasherInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\PasswordPolicyInterface;
+use AlexandreBulete\DddIamBundle\Domain\Service\PermissionCatalogInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\RoleCatalogInterface;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\DoctrineRoleDefinitionRepository;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\DoctrineUserRepository;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\ImmediateEventPublisher;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Listener\TablePrefixListener;
 use AlexandreBulete\DddIamBundle\Infrastructure\Identity\UlidIdentityGenerator;
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\ConfigurablePasswordPolicy;
+use AlexandreBulete\DddIamBundle\Infrastructure\Security\DoctrineRoleCatalog;
+use AlexandreBulete\DddIamBundle\Infrastructure\Security\IamPermissionChecker;
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\IamUserProvider;
-use AlexandreBulete\DddIamBundle\Infrastructure\Security\RoleCatalog;
+use AlexandreBulete\DddIamBundle\Infrastructure\Security\RegistryPermissionCatalog;
+use AlexandreBulete\DddIamBundle\Infrastructure\Security\SecurityGrantPolicy;
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\SymfonyPasswordHasher;
 use AlexandreBulete\DddIamBundle\Infrastructure\Serializer\JsonEventSerializer;
-use AlexandreBulete\DddIamBundle\Infrastructure\Symfony\Command\CreateSuperAdminCommand;
 use AlexandreBulete\DddIamBundle\Infrastructure\Symfony\Controller\AutocompleteUserByEmailAction;
+use AlexandreBulete\DddSymfonyBundle\Messenger\Authorization\PermissionCheckerInterface;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
@@ -60,19 +67,20 @@ return static function (ContainerConfigurator $container): void {
     // a project changes behaviour without touching the bundle.
     $services->alias(PasswordHasherInterface::class, SymfonyPasswordHasher::class);
     $services->alias(PasswordPolicyInterface::class, ConfigurablePasswordPolicy::class);
-    $services->alias(RoleCatalogInterface::class, RoleCatalog::class);
+    $services->alias(RoleCatalogInterface::class, DoctrineRoleCatalog::class);
+    $services->alias(RoleDefinitionRepositoryInterface::class, DoctrineRoleDefinitionRepository::class);
+    $services->alias(PermissionCatalogInterface::class, RegistryPermissionCatalog::class);
+    $services->alias(GrantPolicyInterface::class, SecurityGrantPolicy::class);
+
+    // Providing a checker is what turns authorization on (ADR 0008):
+    // ddd-symfony-bundle then installs its middleware on the buses.
+    $services->alias(PermissionCheckerInterface::class, IamPermissionChecker::class);
     $services->alias(EventSerializerInterface::class, JsonEventSerializer::class);
     $services->alias(DomainEventPublisherInterface::class, ImmediateEventPublisher::class);
     $services->alias(UserRepositoryInterface::class, DoctrineUserRepository::class);
     $services->alias(IdentityGeneratorInterface::class, UlidIdentityGenerator::class);
 
     // ── Config-driven services ──────────────────────────────────────────────
-    $services->set(RoleCatalog::class)
-        ->args([
-            param('iam.role_names'),
-            param('iam.default_roles'),
-        ]);
-
     $services->set(ConfigurablePasswordPolicy::class)
         ->args([
             param('iam.password_policy.min_length'),
@@ -87,14 +95,6 @@ return static function (ContainerConfigurator $container): void {
             service('doctrine.orm.entity_manager'),
             service(DomainEventPublisherInterface::class),
             param('iam.user_class'),
-        ]);
-
-    $services->set(CreateSuperAdminCommand::class)
-        ->args([
-            service(\AlexandreBulete\DddFoundation\Application\Command\CommandBusInterface::class),
-            service(UserRepositoryInterface::class),
-            service(RoleCatalogInterface::class),
-            param('iam.super_admin_role'),
         ]);
 
     $services->set(TablePrefixListener::class)

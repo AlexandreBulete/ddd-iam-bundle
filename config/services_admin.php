@@ -2,7 +2,14 @@
 
 declare(strict_types=1);
 
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Admin\Menu\RoleMenuContributor;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Admin\Menu\UserMenuContributor;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\RoleDefinitionGrid;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\RoleDefinitionGridProvider;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\CreateRoleDefinitionProcessor;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\DeleteRoleDefinitionProcessor;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\UpdateRoleDefinitionProcessor;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Provider\RoleDefinitionItemProvider;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\UserGrid;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\UserGridProvider;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\CreateUserProcessor;
@@ -38,4 +45,12 @@ return static function (ContainerConfigurator $container): void {
     $services->set(DeleteUserProcessor::class);
 
     $services->set(UserMenuContributor::class);
+
+    $services->set(RoleDefinitionGridProvider::class);
+    $services->set(RoleDefinitionGrid::class)->args([param('iam.admin.grid_limits')]);
+    $services->set(RoleDefinitionItemProvider::class);
+    $services->set(CreateRoleDefinitionProcessor::class);
+    $services->set(UpdateRoleDefinitionProcessor::class);
+    $services->set(DeleteRoleDefinitionProcessor::class);
+    $services->set(RoleMenuContributor::class);
 };

@@ -8,6 +8,7 @@ use AlexandreBulete\DddIamBundle\Domain\Enum\UserStatusEnum;
 use AlexandreBulete\DddIamBundle\Domain\Model\User;
 use AlexandreBulete\DddIamBundle\Domain\Repository\UserRepositoryInterface;
 use AlexandreBulete\DddSymfonyBundle\Security\AbstractDomainUserProvider;
+use AlexandreBulete\DddSymfonyBundle\Messenger\Tracing\Actor;
 use AlexandreBulete\DddSymfonyBundle\Security\SecurityUser;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAccountStatusException;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -15,9 +16,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 /**
  * Bridges the IAM aggregate to Symfony Security.
  *
- * Roles come from the aggregate, so `iam.roles` and the back-office role
- * editor are the single source of truth for authorisation — nothing is
- * hardcoded here.
+ * Authorisation is by permission (ADR 0008): the security user carries the
+ * account as an Actor, which PermissionVoter and the bus middleware resolve
+ * to its roles' permissions.
  *
  * STATUS ENFORCEMENT happens at load time rather than through a
  * {@see \Symfony\Component\Security\Core\User\UserCheckerInterface}. The
@@ -64,7 +65,12 @@ final class IamUserProvider extends AbstractDomainUserProvider
         return new SecurityUser(
             userIdentifier: $domainUser->email->value(),
             hashedPassword: $domainUser->password->value(),
-            roles: $domainUser->roles->toStrings(),
+            // ROLE_USER: what Symfony needs to call someone authenticated.
+            // Authorization is by permission (PermissionVoter), not by role.
+            roles: array_values(array_unique(['ROLE_USER', ...$domainUser->roles->toStrings()])),
+            // The account, not the email: the journal and the permission
+            // checks must still recognise it after an email change.
+            actor: Actor::user((string) $domainUser->id, $domainUser->getFullName() ?? $domainUser->email->value()),
         );
     }
 }

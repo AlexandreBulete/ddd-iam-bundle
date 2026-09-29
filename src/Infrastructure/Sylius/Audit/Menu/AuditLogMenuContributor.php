@@ -19,6 +19,10 @@ final readonly class AuditLogMenuContributor extends IamMenuContributor
 {
     public function contribute(ItemInterface $menu): void
     {
+        if (!$this->allowed('iam.find_audit_logs')) {
+            return;
+        }
+
         $this->iamRoot($menu)
             ->addChild('iam_audit_log', ['route' => 'iam_admin_audit_log_entry_index'])
             ->setLabel('iam.audit.index');

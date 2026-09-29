@@ -21,9 +21,16 @@ iam:
         status_revoked: Revoked
 
     role:
-        user: User
-        admin: Administrator
-        super_admin: Super administrator
+        index: Roles
+        label: Label
+        name: Technical name
+        name_help: "Lowercase and underscores (project_manager). Set at creation: users carry it."
+        name_format: "Lowercase letters, digits and underscores, starting with a letter."
+        permissions: Permissions
+
+    activity:
+        role_defined: "Role “%role%” defined"
+        role_permissions_changed: "A role's permissions changed"
 
     audit:
         index: Audit log

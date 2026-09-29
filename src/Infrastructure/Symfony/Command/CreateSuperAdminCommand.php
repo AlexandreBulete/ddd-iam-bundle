@@ -10,6 +10,7 @@ use AlexandreBulete\DddIamBundle\Domain\Exception\PasswordPolicyViolation;
 use AlexandreBulete\DddIamBundle\Domain\Exception\UnknownRoleException;
 use AlexandreBulete\DddIamBundle\Domain\Model\User;
 use AlexandreBulete\DddIamBundle\Domain\Repository\UserRepositoryInterface;
+use AlexandreBulete\DddIamBundle\Domain\Model\RoleDefinition;
 use AlexandreBulete\DddIamBundle\Domain\Service\RoleCatalogInterface;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\Email;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\PlainPassword;
@@ -42,7 +43,6 @@ final class CreateSuperAdminCommand extends Command
         private readonly CommandBusInterface $commandBus,
         private readonly UserRepositoryInterface $userRepository,
         private readonly RoleCatalogInterface $roleCatalog,
-        private readonly string $superAdminRole,
     ) {
         parent::__construct();
     }
@@ -58,7 +58,7 @@ final class CreateSuperAdminCommand extends Command
                 'role',
                 null,
                 InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
-                sprintf('Roles to grant (default: %s)', $this->superAdminRole),
+                sprintf('Roles to grant (default: %s)', RoleDefinition::SUPER_ADMIN),
             )
             ->setHelp(<<<'HELP'
                 Creates the first administrator so that someone can log into the back office.
@@ -121,7 +121,7 @@ final class CreateSuperAdminCommand extends Command
             $roleNames[] = $roleName;
         }
         $roles = $roleNames === []
-            ? RoleSet::fromNames([$this->superAdminRole])
+            ? new RoleSet(RoleDefinition::superAdminRole())
             : RoleSet::fromNames($roleNames);
 
         $firstName = $input->getOption('first-name');

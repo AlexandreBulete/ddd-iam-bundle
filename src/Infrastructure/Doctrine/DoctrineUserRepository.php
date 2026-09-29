@@ -9,6 +9,7 @@ use AlexandreBulete\DddFoundation\Domain\ValueObject\IdentifierVO;
 use AlexandreBulete\DddIamBundle\Domain\Model\User;
 use AlexandreBulete\DddIamBundle\Domain\Repository\UserRepositoryInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\DomainEventPublisherInterface;
+use AlexandreBulete\DddIamBundle\Domain\ValueObject\Role;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -74,6 +75,25 @@ final class DoctrineUserRepository extends DoctrineRepository implements UserRep
             ->getOneOrNullResult();
 
         return $user instanceof User ? $user : null;
+    }
+
+    /**
+     * Counted in PHP, on purpose: roles live in a JSON column, and asking the
+     * database "does this array contain X" is written differently on every
+     * platform (jsonb `@>`, JSON_CONTAINS…). Back-office users number in the
+     * tens; portability is worth the loop. Revisit with a join table if that
+     * ever stops being true.
+     */
+    public function countWithRole(Role $role): int
+    {
+        $count = 0;
+        foreach ($this->query()->getQuery()->toIterable() as $user) {
+            if ($user instanceof User && $user->roles->contains($role)) {
+                ++$count;
+            }
+        }
+
+        return $count;
     }
 
     /**

@@ -16,6 +16,10 @@ final readonly class UserMenuContributor extends IamMenuContributor
 {
     public function contribute(ItemInterface $menu): void
     {
+        if (!$this->allowed('iam.find_users')) {
+            return;
+        }
+
         $this->iamRoot($menu)
             ->addChild('iam_users', ['route' => 'iam_admin_user_index'])
             ->setLabel('iam.user.index');

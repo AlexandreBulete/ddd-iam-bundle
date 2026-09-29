@@ -51,11 +51,11 @@ security:
     access_control:
         - { path: ^/admin/login, roles: PUBLIC_ACCESS }
         - { path: ^/admin/logout, roles: PUBLIC_ACCESS }
-        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/admin, roles: backoffice.access }
 ```
 
-Do **not** declare `security.role_hierarchy`: the bundle prepends it from
-`iam.roles`, and an application-level declaration would win over it.
+`backoffice.access` is a **permission**, not a role: it is ticked in a role
+like any other (see *Roles and permissions* below).
 
 Then:
 
@@ -116,25 +116,32 @@ human label.
 
 ## Extension seams
 
-### 1. Roles — `iam.roles`
+### 1. Roles and permissions — data, not configuration
 
-Roles are an open set, deliberately not a PHP enum. The bundle ships `user`,
-`admin` and `super_admin`; a project **adds** to them:
+Authorization is by **permission** (ddd-symfony-bundle, ADR 0008 of the
+project that drove it): every command and query is a permission, discovered
+from its handler — `iam.create_user`, `client.find_clients`… — plus a few
+entry points like `backoffice.access`.
 
-```yaml
-iam:
-    roles:
-        moderator:
-            inherits: ['user']
-```
+A **role** is a named set of permissions, defined in the back office
+(*Identity › Roles*): name it, tick its permissions, assign it to users. No
+YAML, no deploy. A new use case appears in the role screen by itself.
 
-Additive, not replacing — `array_replace` on top of the defaults, because
-Symfony would otherwise drop them the moment you declare one key.
+- **`super_admin`** is the one system role, created by the bundle's migration:
+  every permission, present and future; it cannot be restricted nor removed.
+- **No default role**: an account created without a role can do nothing.
+- **No escalation**: whoever acts hands out only what they hold — permissions
+  on a role, roles on a user (`super_admin` only by a `super_admin`).
+- A role still carried by users cannot be removed.
 
-`moderator` becomes `ROLE_MODERATOR`, appears in `security.role_hierarchy`, in
-the admin form's role checkboxes and in `iam:create-super-admin --role`.
-Granting a role nobody declared throws `UnknownRoleException` at the point of
-the grant, naming the roles that do exist.
+Providing a `PermissionCheckerInterface` is what turns authorization on: every
+command and query on the buses is then checked (a refusal is a 403 over HTTP),
+and the menu shows only what its screens allow. In templates and
+`access_control`, a permission is used like a role:
+`is_granted('iam.find_users')`, `roles: backoffice.access`.
+
+A role that must exist in every environment is created by a **migration of
+the project** (insert into `iam_role`); the back office covers the rest.
 
 ### 2. Password policy — `iam.password_policy`
 
@@ -266,17 +273,23 @@ composer qa          # phpstan (max + strict rules), deptrac, phpunit
 Integration tests use SQLite in memory unless `DDD_TEST_DATABASE_URL` points
 at a real database — CI runs them on PostgreSQL and MySQL too.
 
+## Upgrading from 1.x
+
+Roles moved from configuration to the database (2.0):
+
+- remove `iam.roles`, `iam.default_roles` and `iam.super_admin_role` from your
+  configuration, and any `security.role_hierarchy` that mirrored them;
+- in `access_control`, replace `ROLE_ADMIN` by `backoffice.access`;
+- run the migrations (the `iam_role` table and `super_admin` are created),
+  then recreate your roles in the back office — `ROLE_ADMIN` / `ROLE_USER` on
+  existing accounts are no longer defined roles.
+
 ## Configuration reference
 
 ```yaml
 iam:
     user_class: AlexandreBulete\DddIamBundle\Domain\Model\User
     table_prefix: iam_
-    roles:
-        # merged on top of user / admin / super_admin
-        moderator: { inherits: ['user'] }
-    default_roles: ['user']
-    super_admin_role: super_admin
     password_policy:
         min_length: 12
         require_letters: true

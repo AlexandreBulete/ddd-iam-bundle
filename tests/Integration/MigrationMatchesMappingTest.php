@@ -36,7 +36,12 @@ final class MigrationMatchesMappingTest extends TestCase
         $pending = (new SchemaTool($em))->getUpdateSchemaSql($em->getMetadataFactory()->getAllMetadata());
 
         self::assertSame([], $pending);
-        self::assertTrue($em->getConnection()->createSchemaManager()->tablesExist([$prefix . 'user', $prefix . 'audit_log']));
+        self::assertTrue($em->getConnection()->createSchemaManager()->tablesExist([$prefix . 'user', $prefix . 'audit_log', $prefix . 'role']));
+        self::assertSame(
+            'ROLE_SUPER_ADMIN',
+            $em->getConnection()->fetchOne(sprintf('SELECT role FROM %srole WHERE is_system = ?', $prefix), [true], [\Doctrine\DBAL\ParameterType::BOOLEAN]),
+            'the system role is seeded',
+        );
 
         $em->getConnection()->close();
     }

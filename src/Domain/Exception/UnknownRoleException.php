@@ -7,11 +7,10 @@ namespace AlexandreBulete\DddIamBundle\Domain\Exception;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\Role;
 
 /**
- * Raised when a role is granted that no deployment declared in `iam.roles`.
+ * Raised when a role is granted that is not defined.
  *
- * Typos in a role name are otherwise invisible — Symfony Security simply
- * never matches the role, and the user silently loses access instead of
- * failing loudly at the point of the mistake.
+ * Otherwise invisible: the user would silently have no access instead of the
+ * mistake failing loudly where it is made.
  */
 final class UnknownRoleException extends \DomainException
 {
@@ -21,7 +20,7 @@ final class UnknownRoleException extends \DomainException
     public function __construct(Role $role, public readonly array $known)
     {
         parent::__construct(sprintf(
-            'Unknown role "%s". Declared roles: %s. Add it under `iam.roles` to grant it.',
+            'Unknown role "%s". Defined roles: %s. Define it in the back office (Roles) to grant it.',
             $role->value(),
             $known === [] ? '(none)' : implode(', ', $known),
         ));

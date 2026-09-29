@@ -92,6 +92,11 @@ final readonly class RoleSet implements \Countable, \IteratorAggregate
         ));
     }
 
+    public function union(self $other): self
+    {
+        return new self(...$this->roles, ...$other->roles);
+    }
+
     public function equals(self $other): bool
     {
         return $this->toStrings() === $other->toStrings();

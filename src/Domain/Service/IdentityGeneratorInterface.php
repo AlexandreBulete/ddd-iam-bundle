@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AlexandreBulete\DddIamBundle\Domain\Service;
 
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\AuditLogEntryId;
+use AlexandreBulete\DddIamBundle\Domain\ValueObject\RoleDefinitionId;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\UserId;
 
 /**
@@ -18,4 +19,6 @@ interface IdentityGeneratorInterface
     public function nextUserId(): UserId;
 
     public function nextAuditLogEntryId(): AuditLogEntryId;
+
+    public function nextRoleDefinitionId(): RoleDefinitionId;
 }

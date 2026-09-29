@@ -6,6 +6,7 @@ namespace AlexandreBulete\DddIamBundle\Infrastructure\Identity;
 
 use AlexandreBulete\DddIamBundle\Domain\Service\IdentityGeneratorInterface;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\AuditLogEntryId;
+use AlexandreBulete\DddIamBundle\Domain\ValueObject\RoleDefinitionId;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\UserId;
 
 /**
@@ -22,5 +23,10 @@ final readonly class UlidIdentityGenerator implements IdentityGeneratorInterface
     public function nextAuditLogEntryId(): AuditLogEntryId
     {
         return AuditLogEntryId::generate();
+    }
+
+    public function nextRoleDefinitionId(): RoleDefinitionId
+    {
+        return RoleDefinitionId::generate();
     }
 }

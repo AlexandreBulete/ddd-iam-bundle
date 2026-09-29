@@ -16,9 +16,16 @@ iam:
         status_revoked: Révoqué
 
     role:
-        user: Utilisateur
-        admin: Administrateur
-        super_admin: Super administrateur
+        index: Rôles
+        label: Libellé
+        name: Nom technique
+        name_help: "En minuscules et tirets bas (chef_de_projet). Fixé à la création : les utilisateurs le portent."
+        name_format: "Minuscules, chiffres et tirets bas, en commençant par une lettre."
+        permissions: Permissions
+
+    activity:
+        role_defined: "Rôle « %role% » défini"
+        role_permissions_changed: "Permissions d'un rôle modifiées"
 
     audit:
         index: Journal d'audit
