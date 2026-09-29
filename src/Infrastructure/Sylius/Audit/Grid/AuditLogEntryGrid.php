@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid;
+namespace AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Audit\Grid;
 
-use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Resource\AuditLogEntryResource;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Audit\Resource\AuditLogEntryResource;
 use Sylius\Bundle\GridBundle\Builder\Field\DateTimeField;
 use Sylius\Bundle\GridBundle\Builder\Field\StringField;
 use Sylius\Bundle\GridBundle\Builder\Filter\StringFilter;

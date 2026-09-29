@@ -2,10 +2,7 @@
 
 declare(strict_types=1);
 
-use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Admin\Menu\AuditLogMenuContributor;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Admin\Menu\UserMenuContributor;
-use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\AuditLogEntryGrid;
-use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\AuditLogEntryGridProvider;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\UserGrid;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\UserGridProvider;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\CreateUserProcessor;
@@ -20,7 +17,8 @@ use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 /**
  * Loaded only when `iam.admin.enabled` is true — everything Sylius, and
  * nothing else. An API-only or headless deployment turns the flag off and the
- * grids, menu entries and CRUD state handlers simply do not exist.
+ * grids, menu entries and CRUD state handlers simply do not exist. The audit
+ * log screen is in services_admin_audit.php: it also needs the audit.
  */
 return static function (ContainerConfigurator $container): void {
     $services = $container->services();
@@ -30,10 +28,8 @@ return static function (ContainerConfigurator $container): void {
         ->autoconfigure();
 
     $services->set(UserGridProvider::class);
-    $services->set(AuditLogEntryGridProvider::class);
 
     $services->set(UserGrid::class)->args([param('iam.admin.grid_limits')]);
-    $services->set(AuditLogEntryGrid::class)->args([param('iam.admin.grid_limits')]);
 
     $services->set(UserItemProvider::class);
     $services->set(UserBulkItemsProvider::class);
@@ -42,5 +38,4 @@ return static function (ContainerConfigurator $container): void {
     $services->set(DeleteUserProcessor::class);
 
     $services->set(UserMenuContributor::class);
-    $services->set(AuditLogMenuContributor::class);
 };

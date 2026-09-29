@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid;
+namespace AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Audit\Grid;
 
 use AlexandreBulete\DddFoundation\Application\Query\QueryBusInterface;
 use AlexandreBulete\DddIamBundle\Application\Query\FindAuditLogs\FindAuditLogsQuery;
-use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Resource\AuditLogEntryResource;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Audit\Resource\AuditLogEntryResource;
 use AlexandreBulete\DddSyliusBundle\Grid\GridPageResolver;
 use Pagerfanta\Adapter\FixedAdapter;
 use Pagerfanta\Pagerfanta;
@@ -16,7 +16,7 @@ use Sylius\Component\Grid\Definition\Grid;
 use Sylius\Component\Grid\Parameters;
 
 /**
- * Same wiring as {@see UserGridProvider}: query bus in, DTOs out.
+ * Same wiring as {@see \AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\UserGridProvider}: query bus in, DTOs out.
  */
 final readonly class AuditLogEntryGridProvider implements DataProviderInterface
 {

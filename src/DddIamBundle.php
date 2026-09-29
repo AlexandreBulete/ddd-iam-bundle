@@ -167,6 +167,10 @@ final class DddIamBundle extends AbstractBundle
 
         if ($config['admin']['enabled']) {
             $container->import($this->getPath() . '/config/services_admin.php');
+
+            if ($config['audit']['enabled']) {
+                $container->import($this->getPath() . '/config/services_admin_audit.php');
+            }
         }
 
         if (self::migrationsEnabled($builder)) {
@@ -185,6 +189,7 @@ final class DddIamBundle extends AbstractBundle
         $declaredRoles = [];
         $userClass = User::class;
         $adminEnabled = true;
+        $auditEnabled = true;
 
         foreach ($configs as $config) {
             if (is_array($config['roles'] ?? null)) {
@@ -197,6 +202,10 @@ final class DddIamBundle extends AbstractBundle
             if (is_array($admin) && is_bool($admin['enabled'] ?? null)) {
                 $adminEnabled = $admin['enabled'];
             }
+            $audit = $config['audit'] ?? null;
+            if (is_array($audit) && is_bool($audit['enabled'] ?? null)) {
+                $auditEnabled = $audit['enabled'];
+            }
         }
 
         $this->prependDoctrine($builder, $userClass);
@@ -205,7 +214,7 @@ final class DddIamBundle extends AbstractBundle
         $this->prependTranslator($builder);
 
         if ($adminEnabled) {
-            $this->prependSyliusResources($builder);
+            $this->prependSyliusResources($builder, $auditEnabled);
         }
     }
 
@@ -323,14 +332,18 @@ final class DddIamBundle extends AbstractBundle
         ]);
     }
 
-    private function prependSyliusResources(ContainerBuilder $builder): void
+    private function prependSyliusResources(ContainerBuilder $builder, bool $auditEnabled): void
     {
         // DddSyliusBundle only globs the application's own src/*/Infrastructure/
-        // Sylius/Resource; a bundle has to declare its own path.
+        // Sylius/Resource; a bundle has to declare its own paths. The audit log
+        // resource only exists with the audit: without it, its route would 500.
+        $paths = [$this->getPath() . '/src/Infrastructure/Sylius/Resource'];
+        if ($auditEnabled) {
+            $paths[] = $this->getPath() . '/src/Infrastructure/Sylius/Audit/Resource';
+        }
+
         $builder->prependExtensionConfig('sylius_resource', [
-            'mapping' => [
-                'paths' => [$this->getPath() . '/src/Infrastructure/Sylius/Resource'],
-            ],
+            'mapping' => ['paths' => $paths],
         ]);
     }
 

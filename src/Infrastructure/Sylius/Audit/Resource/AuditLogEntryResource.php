@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Resource;
+namespace AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Audit\Resource;
 
 use AlexandreBulete\DddIamBundle\Domain\Model\AuditLogEntry;
-use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\AuditLogEntryGrid;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Audit\Grid\AuditLogEntryGrid;
 use Sylius\Resource\Metadata\AsResource;
 use Sylius\Resource\Metadata\Index;
 use Sylius\Resource\Model\ResourceInterface;
