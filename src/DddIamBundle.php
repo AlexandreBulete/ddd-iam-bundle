@@ -59,7 +59,7 @@ final class DddIamBundle extends AbstractBundle
                 ->end()
                 ->scalarNode('table_prefix')
                     ->defaultValue('iam_')
-                    ->info('Prefix for this bundle\'s tables (iam_user, iam_audit_log).')
+                    ->info('Prefix for this bundle\'s tables (iam_user, iam_role, iam_audit_log).')
                 ->end()
                 ->arrayNode('password_policy')
                     ->addDefaultsIfNotSet()
