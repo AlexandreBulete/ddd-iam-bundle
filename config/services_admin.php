@@ -2,6 +2,19 @@
 
 declare(strict_types=1);
 
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Admin\Menu\AgentMenuContributor;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Admin\Menu\ApiTokenMenuContributor;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\AgentGrid;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\AgentGridProvider;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\ApiTokenGrid;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\ApiTokenGridProvider;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\CreateAgentProcessor;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\UpdateAgentProcessor;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\DeleteAgentProcessor;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\IssueApiTokenProcessor;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\RevokeApiTokenProcessor;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Provider\AgentItemProvider;
+use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Provider\ApiTokenItemProvider;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Admin\Menu\RoleMenuContributor;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Admin\Menu\UserMenuContributor;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Grid\RoleDefinitionGrid;
@@ -53,4 +66,19 @@ return static function (ContainerConfigurator $container): void {
     $services->set(UpdateRoleDefinitionProcessor::class);
     $services->set(DeleteRoleDefinitionProcessor::class);
     $services->set(RoleMenuContributor::class);
+
+    $services->set(AgentGridProvider::class);
+    $services->set(AgentGrid::class)->args([param('iam.admin.grid_limits')]);
+    $services->set(AgentItemProvider::class);
+    $services->set(CreateAgentProcessor::class);
+    $services->set(UpdateAgentProcessor::class);
+    $services->set(DeleteAgentProcessor::class);
+    $services->set(AgentMenuContributor::class);
+
+    $services->set(ApiTokenGridProvider::class);
+    $services->set(ApiTokenGrid::class)->args([param('iam.admin.grid_limits')]);
+    $services->set(ApiTokenItemProvider::class);
+    $services->set(IssueApiTokenProcessor::class);
+    $services->set(RevokeApiTokenProcessor::class);
+    $services->set(ApiTokenMenuContributor::class);
 };

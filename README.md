@@ -37,6 +37,12 @@ security:
         app_admin_user_provider:
             id: AlexandreBulete\DddIamBundle\Infrastructure\Security\IamUserProvider
     firewalls:
+        # Agents, by API token (see *Agents and API tokens*). Only if you have an API.
+        api:
+            pattern: ^/api
+            stateless: true
+            access_token:
+                token_handler: AlexandreBulete\DddIamBundle\Infrastructure\Security\ApiTokenHandler
         admin:
             context: admin
             pattern: '/admin(?:/.*)?$'
@@ -52,6 +58,7 @@ security:
         - { path: ^/admin/login, roles: PUBLIC_ACCESS }
         - { path: ^/admin/logout, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: backoffice.access }
+        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 ```
 
 `backoffice.access` is a **permission**, not a role: it is ticked in a role
@@ -132,7 +139,7 @@ YAML, no deploy. A new use case appears in the role screen by itself.
 - **No default role**: an account created without a role can do nothing.
 - **No escalation**: whoever acts hands out only what they hold — permissions
   on a role, roles on a user (`super_admin` only by a `super_admin`).
-- A role still carried by users cannot be removed.
+- A role still carried by users or agents cannot be removed.
 
 Providing a `PermissionCheckerInterface` is what turns authorization on: every
 command and query on the buses is then checked (a refusal is a 403 over HTTP),
@@ -143,7 +150,38 @@ and the menu shows only what its screens allow. In templates and
 A role that must exist in every environment is created by a **migration of
 the project** (insert into `iam_role`); the back office covers the rest.
 
-### 2. Password policy — `iam.password_policy`
+### 2. Agents and API tokens — `iam.api_tokens`
+
+An **agent** is a non-human account: an AI agent, a CI job, an integration.
+It has roles and is authorized exactly like a person, but it has no email, no
+password, and never signs in to the back office: it presents an **API token**.
+
+- *Identity › Agents*: create the agent, give it a role.
+- *Identity › API tokens*: issue a token for it — label, lifetime (90 days by
+  default, a year at most). The token is shown **once**; only its SHA-256 is
+  stored. Several tokens per agent: rotate by issuing the next one, deploying
+  it, revoking the previous one.
+- Revoking an agent revokes its tokens; suspending it stops them until it is
+  reactivated. The list flags tokens about to expire.
+
+A token reads `<prefix>_<id>_<secret>`. The prefix (`iam.api_tokens.prefix`,
+`iam` by default) makes a leaked token recognisable by secret scanners; the id
+is the token's, so everything done with it is one filter away in an activity
+journal (ddd-activity-bundle keeps it as the actor's credential).
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" https://app.example/api/iam/me
+# {"kind":"agent","id":"…","name":"Security watch","token":"…","permissions":[…]}
+```
+
+`GET /api/iam/me` says who the token authenticates and what it may do: what a
+CI job calls to check its token before relying on it.
+
+An agent running *inside* the application (a worker) needs no token: run its
+work as its account, `TraceContext::runAs(Actor::agent($id, $name), 'worker', …)`,
+and the same permissions apply.
+
+### 3. Password policy — `iam.password_policy`
 
 ```yaml
 iam:
@@ -158,7 +196,7 @@ iam:
 Rules config cannot express (history, HIBP lookup, per-tenant): implement
 `PasswordPolicyInterface` and alias it.
 
-### 3. Back office — `iam.admin`
+### 4. Back office — `iam.admin`
 
 ```yaml
 iam:
@@ -184,7 +222,7 @@ Adding a column backed by **your own data** is the one case config does not
 cover: grid fields are read off `UserResource`, which is `final`. You need
 either your own resource + grid pair, or `iam.user_class`.
 
-### 4. Audit — `iam.audit`
+### 5. Audit — `iam.audit`
 
 ```yaml
 iam:
@@ -205,7 +243,7 @@ knows nor cares:
 $services->alias(DomainEventPublisherInterface::class, OutboxEventPublisher::class);
 ```
 
-### 5. Domain events
+### 6. Domain events
 
 `UserCreated`, `UserRenamed`, `UserEmailChanged`, `UserPasswordChanged`,
 `UserRolesChanged`, `UserSuspended`, `UserReactivated`, `UserRevoked`.
@@ -214,7 +252,7 @@ Public and stable. `UserPasswordChanged` deliberately carries no password;
 `UserRolesChanged` carries both the new and the previous set, because the delta
 cannot be recomputed after the fact.
 
-### 6. Table names — `iam.table_prefix`
+### 7. Table names — `iam.table_prefix`
 
 ```yaml
 iam:
@@ -224,7 +262,7 @@ iam:
 Applied at mapping-load time by `TablePrefixListener` — a bundle cannot ship a
 configurable table name in static XML.
 
-### 7. The escape hatch — `iam.user_class`
+### 8. The escape hatch — `iam.user_class`
 
 Subclassing the aggregate. Properties are `protected(set)` and the constructor
 is `protected` to make it possible, but overriding this means shipping your own
@@ -290,6 +328,8 @@ Roles moved from configuration to the database (2.0):
 iam:
     user_class: AlexandreBulete\DddIamBundle\Domain\Model\User
     table_prefix: iam_
+    api_tokens:
+        prefix: iam            # 2 to 16 lowercase letters and digits
     password_policy:
         min_length: 12
         require_letters: true

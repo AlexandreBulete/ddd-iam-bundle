@@ -1,0 +1,2 @@
+{% set badge = {active: 'green', expiring: 'orange', expired: 'secondary', revoked: 'red'}[data] ?? 'secondary' %}
+<span class="badge bg-{{ badge }}-lt">{{ ('iam.api_token.state_' ~ data)|trans }}</span>

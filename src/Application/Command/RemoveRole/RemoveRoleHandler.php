@@ -8,6 +8,7 @@ use AlexandreBulete\DddFoundation\Application\Command\AsCommandHandler;
 use AlexandreBulete\DddFoundation\Domain\Exception\EntityNotFoundException;
 use AlexandreBulete\DddIamBundle\Domain\Exception\RoleStillAssignedException;
 use AlexandreBulete\DddIamBundle\Domain\Model\RoleDefinition;
+use AlexandreBulete\DddIamBundle\Domain\Repository\AgentRepositoryInterface;
 use AlexandreBulete\DddIamBundle\Domain\Repository\RoleDefinitionRepositoryInterface;
 use AlexandreBulete\DddIamBundle\Domain\Repository\UserRepositoryInterface;
 
@@ -17,6 +18,7 @@ final readonly class RemoveRoleHandler
     public function __construct(
         private RoleDefinitionRepositoryInterface $roles,
         private UserRepositoryInterface $users,
+        private AgentRepositoryInterface $agents,
     ) {}
 
     public function __invoke(RemoveRoleCommand $command): void
@@ -24,7 +26,8 @@ final readonly class RemoveRoleHandler
         $definition = $this->roles->findById($command->id)
             ?? throw new EntityNotFoundException(RoleDefinition::class, $command->id);
 
-        $carriers = $this->users->countWithRole($definition->role);
+        // Agents carry roles like people do (ADR 0011).
+        $carriers = $this->users->countWithRole($definition->role) + $this->agents->countWithRole($definition->role);
         if ($carriers > 0) {
             throw new RoleStillAssignedException($definition->role, $carriers);
         }

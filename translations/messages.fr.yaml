@@ -23,9 +23,42 @@ iam:
         name_format: "Minuscules, chiffres et tirets bas, en commençant par une lettre."
         permissions: Permissions
 
+    agent:
+        index: Agents
+        name: Nom
+        description: Description
+        description_help: "À quoi il sert, qui le fait tourner (« Veille sécurité, CI des dépôts clients »)."
+        roles: Rôles
+        status: Statut
+
+    api_token:
+        index: Jetons d'API
+        id: Identifiant
+        agent: Agent
+        label: Libellé
+        label_help: "Où il sera utilisé (« CI lapsa »), pour savoir lequel révoquer."
+        lifetime: Durée de vie
+        lifetime_30: 30 jours
+        lifetime_90: 90 jours
+        lifetime_180: 180 jours
+        lifetime_365: 1 an
+        issued_at: Émis le
+        expires_at: Expire le
+        last_used_at: Dernière utilisation
+        state: État
+        state_active: Actif
+        state_expiring: Expire bientôt
+        state_expired: Expiré
+        state_revoked: Révoqué
+        revoke: Révoquer
+
     activity:
         role_defined: "Rôle « %role% » défini"
         role_permissions_changed: "Permissions d'un rôle modifiées"
+        agent_created: "Agent « %agent% » créé"
+        agent_roles_changed: "Rôles d'un agent modifiés"
+        api_token_issued: "Jeton « %token% » émis"
+        api_token_revoked: "Jeton révoqué"
 
     audit:
         index: Journal d'audit

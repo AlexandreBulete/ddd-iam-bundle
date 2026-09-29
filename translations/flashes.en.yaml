@@ -1,0 +1,3 @@
+iam:
+    api_token:
+        issued: "Copy this token now, it will never be shown again: %token%"

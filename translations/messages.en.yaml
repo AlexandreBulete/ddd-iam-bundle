@@ -28,9 +28,42 @@ iam:
         name_format: "Lowercase letters, digits and underscores, starting with a letter."
         permissions: Permissions
 
+    agent:
+        index: Agents
+        name: Name
+        description: Description
+        description_help: "What it is for, who runs it (\"Security watch, client repositories' CI\")."
+        roles: Roles
+        status: Status
+
+    api_token:
+        index: API tokens
+        id: Id
+        agent: Agent
+        label: Label
+        label_help: "Where it will be used (\"lapsa CI\"), to know which one to revoke."
+        lifetime: Lifetime
+        lifetime_30: 30 days
+        lifetime_90: 90 days
+        lifetime_180: 180 days
+        lifetime_365: 1 year
+        issued_at: Issued
+        expires_at: Expires
+        last_used_at: Last used
+        state: State
+        state_active: Active
+        state_expiring: Expiring soon
+        state_expired: Expired
+        state_revoked: Revoked
+        revoke: Revoke
+
     activity:
         role_defined: "Role “%role%” defined"
         role_permissions_changed: "A role's permissions changed"
+        agent_created: "Agent “%agent%” created"
+        agent_roles_changed: "An agent's roles changed"
+        api_token_issued: "Token “%token%” issued"
+        api_token_revoked: "Token revoked"
 
     audit:
         index: Audit log

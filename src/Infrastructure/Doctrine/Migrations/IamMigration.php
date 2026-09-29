@@ -29,7 +29,7 @@ abstract class IamMigration extends AbstractMigration
     }
 
     /**
-     * @param 'user'|'audit_log'|'role' $name unprefixed table name, as in DddIamBundle::TABLES
+     * @param 'user'|'audit_log'|'role'|'agent'|'api_token' $name unprefixed table name, as in DddIamBundle::TABLES
      */
     protected function table(string $name): string
     {

@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace AlexandreBulete\DddIamBundle;
 
+use AlexandreBulete\DddIamBundle\Domain\Model\Agent;
+use AlexandreBulete\DddIamBundle\Domain\Model\ApiToken;
 use AlexandreBulete\DddIamBundle\Domain\Model\AuditLogEntry;
 use AlexandreBulete\DddIamBundle\Domain\Model\RoleDefinition;
 use AlexandreBulete\DddIamBundle\Domain\Model\User;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\AgentIdType;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\ApiTokenDigestType;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\ApiTokenIdType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\AuditLogEntryIdType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\EmailType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\PasswordType;
@@ -34,6 +39,7 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
  *     user_class: class-string<User>,
  *     table_prefix: string,
  *     password_policy: array<string, int|bool>,
+ *     api_tokens: array{prefix: string},
  *     audit: array{enabled: bool},
  *     admin: array{enabled: bool, grid_limits: list<int>},
  * }
@@ -47,6 +53,8 @@ final class DddIamBundle extends AbstractBundle
         User::class => 'user',
         AuditLogEntry::class => 'audit_log',
         RoleDefinition::class => 'role',
+        Agent::class => 'agent',
+        ApiToken::class => 'api_token',
     ];
 
     public function configure(DefinitionConfigurator $definition): void
@@ -59,7 +67,7 @@ final class DddIamBundle extends AbstractBundle
                 ->end()
                 ->scalarNode('table_prefix')
                     ->defaultValue('iam_')
-                    ->info('Prefix for this bundle\'s tables (iam_user, iam_role, iam_audit_log).')
+                    ->info('Prefix for this bundle\'s tables (iam_user, iam_role, iam_agent, iam_api_token, iam_audit_log).')
                 ->end()
                 ->arrayNode('password_policy')
                     ->addDefaultsIfNotSet()
@@ -69,6 +77,19 @@ final class DddIamBundle extends AbstractBundle
                         ->booleanNode('require_digits')->defaultTrue()->end()
                         ->booleanNode('require_mixed_case')->defaultFalse()->end()
                         ->booleanNode('require_special_character')->defaultFalse()->end()
+                    ->end()
+                ->end()
+                ->arrayNode('api_tokens')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->scalarNode('prefix')
+                            ->defaultValue('iam')
+                            ->info('Leads every API token (`<prefix>_<id>_<secret>`) so that a leaked one is recognisable, e.g. by secret scanning. Lowercase letters and digits.')
+                            ->validate()
+                                ->ifTrue(static fn (mixed $prefix): bool => !is_string($prefix) || preg_match('/^[a-z][a-z0-9]{1,15}$/', $prefix) !== 1)
+                                ->thenInvalid('A token prefix is 2 to 16 lowercase letters and digits, starting with a letter; %s given.')
+                            ->end()
+                        ->end()
                     ->end()
                 ->end()
                 ->arrayNode('audit')
@@ -105,6 +126,7 @@ final class DddIamBundle extends AbstractBundle
             ->set('iam.user_class', $config['user_class'])
             ->set('iam.table_prefix', $config['table_prefix'])
             ->set('iam.tables', self::TABLES)
+            ->set('iam.api_tokens.prefix', $config['api_tokens']['prefix'])
             ->set('iam.admin.grid_limits', $config['admin']['grid_limits']);
 
         // Flattened one key per rule: `param()` resolves a parameter name, it
@@ -185,6 +207,9 @@ final class DddIamBundle extends AbstractBundle
                     RoleDefinitionIdType::NAME => RoleDefinitionIdType::class,
                     PermissionSetType::NAME => PermissionSetType::class,
                     AuditLogEntryIdType::NAME => AuditLogEntryIdType::class,
+                    AgentIdType::NAME => AgentIdType::class,
+                    ApiTokenIdType::NAME => ApiTokenIdType::class,
+                    ApiTokenDigestType::NAME => ApiTokenDigestType::class,
                 ],
             ],
         ]);

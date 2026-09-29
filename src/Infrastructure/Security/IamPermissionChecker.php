@@ -14,7 +14,7 @@ use AlexandreBulete\DddSymfonyBundle\Messenger\Tracing\Actor;
 final readonly class IamPermissionChecker implements PermissionCheckerInterface
 {
     public function __construct(
-        private UserPermissions $permissions,
+        private AccountPermissions $permissions,
     ) {}
 
     public function isGranted(Actor $actor, string $permission): bool

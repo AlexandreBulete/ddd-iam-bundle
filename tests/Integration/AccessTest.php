@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AlexandreBulete\DddIamBundle\Tests\Integration;
 
+use AlexandreBulete\DddIamBundle\Domain\Model\Agent;
 use AlexandreBulete\DddIamBundle\Domain\Model\RoleDefinition;
+use AlexandreBulete\DddIamBundle\Domain\ValueObject\AgentId;
 use AlexandreBulete\DddIamBundle\Domain\Model\User;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\Email;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\Password;
@@ -13,11 +15,12 @@ use AlexandreBulete\DddIamBundle\Domain\ValueObject\Role;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\RoleDefinitionId;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\RoleSet;
 use AlexandreBulete\DddIamBundle\Domain\ValueObject\UserId;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\DoctrineAgentRepository;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\DoctrineRoleDefinitionRepository;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\DoctrineUserRepository;
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\IamPermissionChecker;
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\SecurityGrantPolicy;
-use AlexandreBulete\DddIamBundle\Infrastructure\Security\UserPermissions;
+use AlexandreBulete\DddIamBundle\Infrastructure\Security\AccountPermissions;
 use AlexandreBulete\DddIamBundle\Tests\Integration\Fixture\NullEventPublisher;
 use AlexandreBulete\DddSymfonyBundle\Messenger\Tracing\Actor;
 use AlexandreBulete\DddSymfonyBundle\Messenger\Tracing\TraceContext;
@@ -35,7 +38,8 @@ final class AccessTest extends TestCase
 {
     private EntityManagerInterface $em;
     private DoctrineUserRepository $users;
-    private UserPermissions $permissions;
+    private DoctrineAgentRepository $agents;
+    private AccountPermissions $permissions;
     private IamPermissionChecker $checker;
 
     protected function setUp(): void
@@ -52,7 +56,8 @@ final class AccessTest extends TestCase
             new \DateTimeImmutable(),
         ));
 
-        $this->permissions = new UserPermissions($this->users, $roles);
+        $this->agents = new DoctrineAgentRepository($this->em, new NullEventPublisher());
+        $this->permissions = new AccountPermissions($this->users, $roles, $this->agents);
         $this->checker = new IamPermissionChecker($this->permissions);
     }
 
@@ -88,6 +93,29 @@ final class AccessTest extends TestCase
     }
 
     #[Test]
+    public function an_agent_holds_the_permissions_of_its_roles_like_a_person(): void
+    {
+        $agent = $this->agent(['reader']);
+
+        self::assertTrue($this->checker->isGranted($agent, 'iam.find_users'));
+        self::assertFalse($this->checker->isGranted($agent, 'iam.revoke_user'));
+    }
+
+    #[Test]
+    public function a_suspended_agent_holds_nothing(): void
+    {
+        self::assertFalse($this->checker->isGranted($this->agent(['super_admin'], suspended: true), 'iam.find_users'));
+    }
+
+    #[Test]
+    public function an_agent_id_presented_as_a_user_is_nobody(): void
+    {
+        $agent = $this->agent(['reader']);
+
+        self::assertFalse($this->checker->isGranted(Actor::user((string) $agent->id, 'Impostor'), 'iam.find_users'));
+    }
+
+    #[Test]
     public function an_unknown_actor_holds_nothing(): void
     {
         self::assertFalse($this->checker->isGranted(Actor::user((string) UserId::generate(), 'Ghost'), 'iam.find_users'));
@@ -116,6 +144,20 @@ final class AccessTest extends TestCase
 
         $policy->assertMayAssign(new RoleSet(Role::fromName('super_admin')));
         $this->addToAssertionCount(1);
+    }
+
+    /**
+     * @param list<string> $roles
+     */
+    private function agent(array $roles, bool $suspended = false): Actor
+    {
+        $agent = Agent::create(AgentId::generate(), 'Veille', null, RoleSet::fromNames($roles), new \DateTimeImmutable());
+        if ($suspended) {
+            $agent->suspend(new \DateTimeImmutable());
+        }
+        $this->agents->save($agent);
+
+        return Actor::agent((string) $agent->id, $agent->name);
     }
 
     /**

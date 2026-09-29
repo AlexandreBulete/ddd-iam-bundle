@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AlexandreBulete\DddIamBundle\Domain\Repository\AgentRepositoryInterface;
+use AlexandreBulete\DddIamBundle\Domain\Repository\ApiTokenRepositoryInterface;
 use AlexandreBulete\DddIamBundle\Domain\Repository\RoleDefinitionRepositoryInterface;
 use AlexandreBulete\DddIamBundle\Domain\Repository\UserRepositoryInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\DomainEventPublisherInterface;
@@ -12,6 +14,9 @@ use AlexandreBulete\DddIamBundle\Domain\Service\PasswordHasherInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\PasswordPolicyInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\PermissionCatalogInterface;
 use AlexandreBulete\DddIamBundle\Domain\Service\RoleCatalogInterface;
+use AlexandreBulete\DddIamBundle\Domain\Service\SecretGeneratorInterface;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\DoctrineAgentRepository;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\DoctrineApiTokenRepository;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\DoctrineRoleDefinitionRepository;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\DoctrineUserRepository;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\ImmediateEventPublisher;
@@ -21,11 +26,13 @@ use AlexandreBulete\DddIamBundle\Infrastructure\Security\ConfigurablePasswordPol
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\DoctrineRoleCatalog;
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\IamPermissionChecker;
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\IamUserProvider;
+use AlexandreBulete\DddIamBundle\Infrastructure\Security\RandomSecretGenerator;
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\RegistryPermissionCatalog;
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\SecurityGrantPolicy;
 use AlexandreBulete\DddIamBundle\Infrastructure\Security\SymfonyPasswordHasher;
 use AlexandreBulete\DddIamBundle\Infrastructure\Serializer\JsonEventSerializer;
 use AlexandreBulete\DddIamBundle\Infrastructure\Symfony\Controller\AutocompleteUserByEmailAction;
+use AlexandreBulete\DddIamBundle\Infrastructure\Symfony\Controller\WhoAmIAction;
 use AlexandreBulete\DddSymfonyBundle\Messenger\Authorization\PermissionCheckerInterface;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
@@ -39,7 +46,9 @@ return static function (ContainerConfigurator $container): void {
 
     $services->defaults()
         ->autowire()
-        ->autoconfigure();
+        ->autoconfigure()
+        // Issuing a token and reading one both need the prefix (ADR 0011).
+        ->bind('string $tokenPrefix', param('iam.api_tokens.prefix'));
 
     $services->load('AlexandreBulete\\DddIamBundle\\', $src . '/')
         ->exclude([
@@ -79,6 +88,9 @@ return static function (ContainerConfigurator $container): void {
     $services->alias(DomainEventPublisherInterface::class, ImmediateEventPublisher::class);
     $services->alias(UserRepositoryInterface::class, DoctrineUserRepository::class);
     $services->alias(IdentityGeneratorInterface::class, UlidIdentityGenerator::class);
+    $services->alias(AgentRepositoryInterface::class, DoctrineAgentRepository::class);
+    $services->alias(ApiTokenRepositoryInterface::class, DoctrineApiTokenRepository::class);
+    $services->alias(SecretGeneratorInterface::class, RandomSecretGenerator::class);
 
     // ── Config-driven services ──────────────────────────────────────────────
     $services->set(ConfigurablePasswordPolicy::class)
@@ -107,6 +119,8 @@ return static function (ContainerConfigurator $container): void {
     // Plain invokable action, not an AbstractController subclass: autoconfigure
     // would not tag it, and an untagged controller cannot receive its arguments.
     $services->set(AutocompleteUserByEmailAction::class)
+        ->tag('controller.service_arguments');
+    $services->set(WhoAmIAction::class)
         ->tag('controller.service_arguments');
 
     // Referenced by id from security.yaml (`providers: { id: … }`).

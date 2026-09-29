@@ -10,7 +10,7 @@ use AlexandreBulete\DddIamBundle\Domain\ValueObject\PermissionSet;
  * What one account may do: every permission if it carries super_admin, the
  * union of its roles' permissions otherwise.
  */
-final readonly class UserAccess
+final readonly class AccountAccess
 {
     public function __construct(
         public bool $superAdmin,

@@ -19,7 +19,7 @@ final readonly class SecurityGrantPolicy implements GrantPolicyInterface
 {
     public function __construct(
         private TraceContext $trace,
-        private UserPermissions $permissions,
+        private AccountPermissions $permissions,
         private RoleDefinitionRepositoryInterface $roles,
     ) {}
 
@@ -60,7 +60,7 @@ final readonly class SecurityGrantPolicy implements GrantPolicyInterface
     /**
      * true for the system, the acting account's access otherwise (null: none).
      */
-    private function actingAccess(): UserAccess|true|null
+    private function actingAccess(): AccountAccess|true|null
     {
         $actor = $this->trace->current()?->actor;
         if ($actor === null || $actor->isSystem()) {

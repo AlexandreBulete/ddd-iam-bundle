@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Table name authoritative at its default only: TablePrefixListener applies
+    `iam.table_prefix`. Index names are left to Doctrine (schema-wide on
+    PostgreSQL, derived from the prefixed table).
+-->
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="AlexandreBulete\DddIamBundle\Domain\Model\Agent" table="iam_agent">
+        <id name="id" type="iam_agent_id"/>
+        <field name="name" type="string" length="100"/>
+        <field name="description" type="string" length="500" nullable="true"/>
+        <field name="roles" type="iam_roles"/>
+        <field name="status" type="iam_user_status" length="20"/>
+        <field name="createdAt" type="datetime_immutable" column="created_at"/>
+        <field name="updatedAt" type="datetime_immutable" column="updated_at" nullable="true"/>
+        <field name="revokedAt" type="datetime_immutable" column="revoked_at" nullable="true"/>
+
+        <indexes>
+            <index columns="status"/>
+        </indexes>
+    </entity>
+</doctrine-mapping>

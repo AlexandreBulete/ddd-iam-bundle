@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Migrations\Version20260928120000;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Migrations\Version20261001120000;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Migrations\Version20261002130000;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
@@ -31,7 +32,7 @@ return static function (ContainerConfigurator $container): void {
         ->autowire()
         ->tag('doctrine_migrations.migration');
 
-    foreach ([Version20260928120000::class, Version20261001120000::class] as $migration) {
+    foreach ([Version20260928120000::class, Version20261001120000::class, Version20261002130000::class] as $migration) {
         $services->set($migration)
             ->arg('$tablePrefix', param('iam.table_prefix'));
     }

@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace AlexandreBulete\DddIamBundle\Tests\Integration;
 
+use AlexandreBulete\DddIamBundle\Domain\Model\Agent;
+use AlexandreBulete\DddIamBundle\Domain\Model\ApiToken;
 use AlexandreBulete\DddIamBundle\Domain\Model\AuditLogEntry;
 use AlexandreBulete\DddIamBundle\Domain\Model\User;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Listener\TablePrefixListener;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Migrations\Version20260928120000;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Migrations\Version20261001120000;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Migrations\Version20261002130000;
 use AlexandreBulete\DddIamBundle\Domain\Model\RoleDefinition;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\AgentIdType;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\ApiTokenDigestType;
+use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\ApiTokenIdType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\AuditLogEntryIdType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\EmailType;
 use AlexandreBulete\DddIamBundle\Infrastructure\Doctrine\Type\PasswordType;
@@ -47,6 +53,8 @@ final class IamDatabase
         User::class => 'user',
         AuditLogEntry::class => 'audit_log',
         RoleDefinition::class => 'role',
+        Agent::class => 'agent',
+        ApiToken::class => 'api_token',
     ];
 
     public static function migrated(string $prefix): EntityManagerInterface
@@ -98,7 +106,7 @@ final class IamDatabase
      */
     private static function runMigration(Connection $connection, string $prefix): void
     {
-        foreach ([Version20260928120000::class, Version20261001120000::class] as $class) {
+        foreach ([Version20260928120000::class, Version20261001120000::class, Version20261002130000::class] as $class) {
             $migration = new $class($connection, new NullLogger(), $prefix);
             $schemaManager = $connection->createSchemaManager();
             $from = $schemaManager->introspectSchema();
@@ -124,6 +132,9 @@ final class IamDatabase
             RoleType::NAME => RoleType::class,
             RoleDefinitionIdType::NAME => RoleDefinitionIdType::class,
             PermissionSetType::NAME => PermissionSetType::class,
+            AgentIdType::NAME => AgentIdType::class,
+            ApiTokenIdType::NAME => ApiTokenIdType::class,
+            ApiTokenDigestType::NAME => ApiTokenDigestType::class,
         ] as $name => $class) {
             if (!Type::hasType($name)) {
                 Type::addType($name, $class);

@@ -1,0 +1,3 @@
+iam:
+    api_token:
+        issued: "Copiez ce jeton maintenant, il ne sera plus jamais affiché : %token%"
