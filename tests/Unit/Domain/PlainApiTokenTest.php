@@ -17,9 +17,9 @@ final class PlainApiTokenTest extends TestCase
     #[Test]
     public function what_is_issued_is_what_is_read_back(): void
     {
-        $issued = PlainApiToken::compose('pilot', ApiTokenId::generate(), self::SECRET);
+        $issued = PlainApiToken::compose('acme', ApiTokenId::generate(), self::SECRET);
 
-        $read = PlainApiToken::parse('pilot', $issued->toString());
+        $read = PlainApiToken::parse('acme', $issued->toString());
 
         self::assertNotNull($read);
         self::assertTrue($issued->id->equals($read->id));
@@ -35,9 +35,9 @@ final class PlainApiTokenTest extends TestCase
         $id = (string) ApiTokenId::generate();
 
         yield 'another prefix' => ["other_{$id}_" . self::SECRET];
-        yield 'no id' => ['pilot_' . self::SECRET];
-        yield 'not an id' => ['pilot_not-an-id_' . self::SECRET];
-        yield 'short secret' => ["pilot_{$id}_short"];
+        yield 'no id' => ['acme_' . self::SECRET];
+        yield 'not an id' => ['acme_not-an-id_' . self::SECRET];
+        yield 'short secret' => ["acme_{$id}_short"];
         yield 'empty' => [''];
     }
 
@@ -45,13 +45,13 @@ final class PlainApiTokenTest extends TestCase
     #[DataProvider('notOurs')]
     public function anything_else_is_not_a_token(string $presented): void
     {
-        self::assertNull(PlainApiToken::parse('pilot', $presented));
+        self::assertNull(PlainApiToken::parse('acme', $presented));
     }
 
     #[Test]
     public function its_secret_does_not_show_in_a_dump(): void
     {
-        $token = PlainApiToken::compose('pilot', ApiTokenId::generate(), self::SECRET);
+        $token = PlainApiToken::compose('acme', ApiTokenId::generate(), self::SECRET);
 
         self::assertStringNotContainsString(self::SECRET, print_r($token, true));
     }
@@ -60,6 +60,6 @@ final class PlainApiTokenTest extends TestCase
     public function a_prefix_is_a_short_lowercase_word(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        PlainApiToken::compose('Pilot_', ApiTokenId::generate(), self::SECRET);
+        PlainApiToken::compose('Acme_', ApiTokenId::generate(), self::SECRET);
     }
 }

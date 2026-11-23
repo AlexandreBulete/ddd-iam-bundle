@@ -83,7 +83,7 @@ final class ApiTokenTest extends TestCase
         return ApiToken::issue(
             ApiTokenId::generate(),
             AgentId::generate(),
-            'CI lapsa',
+            'CI acme',
             ApiTokenDigest::of(self::SECRET),
             new \DateTimeImmutable('2026-01-01'),
             new \DateTimeImmutable($expiresAt),

@@ -54,7 +54,7 @@ final class ApiTokenAuthenticationTest extends TestCase
         $this->agents = new DoctrineAgentRepository($this->em, new NullEventPublisher());
         $this->tokens = new DoctrineApiTokenRepository($this->em, new NullEventPublisher());
         $this->clock = new MockClock(new \DateTimeImmutable('2026-01-01 10:00')); // the application's timezone, as the database reads it back
-        $this->handler = new ApiTokenHandler($this->tokens, $this->agents, $this->clock, 'pilot');
+        $this->handler = new ApiTokenHandler($this->tokens, $this->agents, $this->clock, 'acme');
     }
 
     protected function tearDown(): void
@@ -76,7 +76,7 @@ final class ApiTokenAuthenticationTest extends TestCase
         self::assertSame((string) $agent->id, $actor->id);
         self::assertSame('Veille', $actor->label);
         self::assertSame((string) $issued->token->id, $actor->credential);
-        self::assertStringStartsWith('pilot_', $issued->plain->toString());
+        self::assertStringStartsWith('acme_', $issued->plain->toString());
     }
 
     #[Test]
@@ -108,7 +108,7 @@ final class ApiTokenAuthenticationTest extends TestCase
         $issued = $this->issue($this->agent());
 
         $this->expectException(BadCredentialsException::class);
-        $this->authenticate('pilot_' . (string) $issued->token->id . '_' . str_repeat('x', 43));
+        $this->authenticate('acme_' . (string) $issued->token->id . '_' . str_repeat('x', 43));
     }
 
     #[Test]
@@ -180,12 +180,12 @@ final class ApiTokenAuthenticationTest extends TestCase
 
     private function issue(Agent $agent): IssuedApiToken
     {
-        return $this->issueHandler()(new IssueApiTokenCommand($agent->id, 'CI lapsa', $this->clock->now()->modify('+90 days')));
+        return $this->issueHandler()(new IssueApiTokenCommand($agent->id, 'CI acme', $this->clock->now()->modify('+90 days')));
     }
 
     private function issueHandler(): IssueApiTokenHandler
     {
-        return new IssueApiTokenHandler($this->agents, $this->tokens, new UlidIdentityGenerator(), new RandomSecretGenerator(), $this->clock, 'pilot');
+        return new IssueApiTokenHandler($this->agents, $this->tokens, new UlidIdentityGenerator(), new RandomSecretGenerator(), $this->clock, 'acme');
     }
 
     private function authenticate(string $presented): object

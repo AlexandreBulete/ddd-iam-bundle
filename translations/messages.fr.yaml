@@ -36,7 +36,7 @@ iam:
         id: Identifiant
         agent: Agent
         label: Libellé
-        label_help: "Où il sera utilisé (« CI lapsa »), pour savoir lequel révoquer."
+        label_help: "Où il sera utilisé (« CI du site »), pour savoir lequel révoquer."
         lifetime: Durée de vie
         lifetime_30: 30 jours
         lifetime_90: 90 jours

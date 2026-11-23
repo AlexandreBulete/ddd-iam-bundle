@@ -41,7 +41,7 @@ iam:
         id: Id
         agent: Agent
         label: Label
-        label_help: "Where it will be used (\"lapsa CI\"), to know which one to revoke."
+        label_help: "Where it will be used (\"website CI\"), to know which one to revoke."
         lifetime: Lifetime
         lifetime_30: 30 days
         lifetime_90: 90 days
