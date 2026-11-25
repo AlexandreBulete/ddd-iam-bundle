@@ -1,4 +1,23 @@
 iam:
+    ui:
+        agents: Agents
+        agent: agent
+        new_agent: Nouvel agent
+        edit_agent: Modifier l’agent
+        api_tokens: Jetons d’API
+        api_token: jeton d’API
+        new_api_token: Nouveau jeton d’API
+        edit_api_token: Modifier le jeton d’API
+        audit_log_entries: Journal d’audit
+        audit_log_entry: entrée du journal
+        roles: Rôles
+        role: rôle
+        new_role: Nouveau rôle
+        edit_role: Modifier le rôle
+        users: Utilisateurs
+        user: utilisateur
+        new_user: Nouvel utilisateur
+        edit_user: Modifier l’utilisateur
     menu:
         root: Identité
 

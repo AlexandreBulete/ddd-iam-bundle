@@ -2,6 +2,25 @@
 # project's own catalogue. A project overrides any of them by declaring the
 # same key in its own translations/ — application catalogues win over bundles.
 iam:
+    ui:
+        agents: Agents
+        agent: agent
+        new_agent: New agent
+        edit_agent: Edit agent
+        api_tokens: API tokens
+        api_token: API token
+        new_api_token: New API token
+        edit_api_token: Edit API token
+        audit_log_entries: Audit log
+        audit_log_entry: log entry
+        roles: Roles
+        role: role
+        new_role: New role
+        edit_role: Edit role
+        users: Users
+        user: user
+        new_user: New user
+        edit_user: Edit user
     menu:
         root: Identity
 
