@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace AlexandreBulete\DddIamBundle\Infrastructure\Symfony\Form\Type;
 
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\Resource\RoleDefinitionResource;
+use AlexandreBulete\DddIamBundle\Infrastructure\Symfony\Form\Permission\PermissionSummaryType;
+use AlexandreBulete\DddIamBundle\Infrastructure\Symfony\Form\Permission\PermissionTreeType;
 use AlexandreBulete\DddSymfonyBundle\Messenger\Authorization\PermissionRegistry;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -44,16 +45,16 @@ final class RoleDefinitionType extends AbstractType
             ]);
 
         if (!$isSystem) {
-            $builder->add('permissions', ChoiceType::class, [
-                'section' => 'permissions',
-                // The card title names the list.
-                'label' => false,
-                'required' => false,
-                'multiple' => true,
-                'expanded' => true,
-                'choices' => $this->permissionChoices(),
-                'choice_translation_domain' => false,
-            ]);
+            $builder
+                ->add('permissions', PermissionTreeType::class, [
+                    'section' => 'permissions',
+                    // The card title names the list.
+                    'label' => false,
+                    'choices' => $this->permissionChoices(),
+                ])
+                ->add('permissionSummary', PermissionSummaryType::class, [
+                    'section' => 'summary',
+                ]);
         }
     }
 
@@ -64,20 +65,18 @@ final class RoleDefinitionType extends AbstractType
             'sections' => [
                 'role' => ['label' => 'iam.section.role'],
                 'permissions' => ['label' => 'iam.section.permissions'],
+                'summary' => ['label' => 'iam.section.summary', 'column' => 'side'],
             ],
         ]);
     }
 
     /**
-     * @return array<string, array<string, string>> context => [permission => permission]
+     * @return array<string, string> permission => permission
      */
     private function permissionChoices(): array
     {
-        $choices = [];
-        foreach ($this->permissions->byContext() as $context => $permissions) {
-            $choices[$context] = array_combine($permissions, $permissions);
-        }
+        $all = $this->permissions->all();
 
-        return $choices;
+        return array_combine($all, $all);
     }
 }

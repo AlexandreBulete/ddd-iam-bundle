@@ -8,6 +8,7 @@ iam:
         permissions: "Permissions"
         token: "Le jeton"
         validity: "Validité"
+        summary: "Ce que le rôle permet"
     ui:
         agents: Agents
         agent: agent
@@ -50,6 +51,17 @@ iam:
         name_help: "En minuscules et tirets bas (chef_de_projet). Fixé à la création : les utilisateurs le portent."
         name_format: "Minuscules, chiffres et tirets bas, en commençant par une lettre."
         permissions: Permissions
+
+    permission:
+        filter: "Filtrer (post, publish, user…)"
+        expand_all: "Tout déplier"
+        collapse_all: "Tout replier"
+        select_all: "Tout « %name% »"
+        no_match: "Aucune permission ne correspond."
+        total: "permissions sur"
+        none: "Aucune permission : ce rôle ne donne accès à rien."
+        full: "tout"
+        no_script: "Le résumé se met à jour avec JavaScript."
 
     agent:
         index: Agents

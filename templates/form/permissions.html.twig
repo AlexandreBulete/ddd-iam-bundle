@@ -1,0 +1,220 @@
+{#
+ # The permissions of a role (PermissionTreeType) as a tree of folding
+ # levels — context › object › permission — with a box at each level that
+ # ticks everything below it, and the summary card (PermissionSummaryType)
+ # that counts what is ticked. Without JavaScript every level stays open and
+ # each permission still ticks on its own.
+ #}
+
+{% macro node(node, byValue, disabled, depth) %}
+    {% import _self as perm %}
+    <div class="ddd-perm__node" data-node data-key="{{ node.key }}" data-label="{{ node.label }}" data-depth="{{ depth }}">
+        <div class="ddd-perm__head">
+            <input type="checkbox" class="form-check-input m-0" data-all aria-label="{{ 'iam.permission.select_all'|trans({'%name%': node.label}) }}"{{ disabled ? ' disabled' }}>
+            <button type="button" class="ddd-perm__toggle" data-toggle aria-expanded="true">
+                <span class="ddd-perm__chevron" aria-hidden="true"></span>
+                <span class="ddd-perm__name">{{ node.label }}</span>
+            </button>
+            <span class="ddd-perm__count" data-count></span>
+        </div>
+        <div class="ddd-perm__body" data-body>
+            {% for child in node.children %}{{ perm.node(child, byValue, disabled, depth + 1) }}{% endfor %}
+            {% if node.permissions is not empty %}
+                <div class="ddd-perm__leaves">
+                    {% for leaf in node.permissions %}
+                        {% set field = byValue[leaf.value] ?? null %}
+                        {% if field is not null %}
+                            <label class="form-check ddd-perm__leaf" title="{{ leaf.value }}" data-leaf data-search="{{ leaf.value|replace({'_': ' '}) }}">
+                                <input type="checkbox" class="form-check-input" name="{{ field.vars.full_name }}" id="{{ field.vars.id }}" value="{{ field.vars.value }}"{{ field.vars.checked ? ' checked' }}{{ disabled ? ' disabled' }}>
+                                <span class="form-check-label">{{ leaf.label }}</span>
+                            </label>
+                            {% do field.setRendered %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endmacro %}
+
+{% block ddd_iam_permission_tree_widget %}
+    {% import _self as perm %}
+    {% set byValue = {} %}
+    {% for child in form %}{% set byValue = byValue|merge({(child.vars.value): child}) %}{% endfor %}
+    <div class="ddd-perm" id="{{ id }}" data-ddd-perm>
+        <div class="ddd-perm__tools">
+            <input type="search" class="form-control form-control-sm" data-filter placeholder="{{ 'iam.permission.filter'|trans }}" aria-label="{{ 'iam.permission.filter'|trans }}">
+            <button type="button" class="btn btn-sm" data-expand-all>{{ 'iam.permission.expand_all'|trans }}</button>
+            <button type="button" class="btn btn-sm" data-collapse-all>{{ 'iam.permission.collapse_all'|trans }}</button>
+        </div>
+        {% for node in tree %}{{ perm.node(node, byValue, disabled, 0) }}{% endfor %}
+        <p class="text-secondary small mt-2 mb-0" data-no-match hidden>{{ 'iam.permission.no_match'|trans }}</p>
+    </div>
+    {% do form.setRendered %}
+    <style>
+        .ddd-perm__tools { display: flex; gap: 8px; margin-bottom: 12px; }
+        .ddd-perm__tools input { flex: 1; }
+        .ddd-perm__node { border: 1px solid var(--tblr-border-color); border-radius: 8px; margin-bottom: 8px; background: var(--tblr-bg-surface); }
+        .ddd-perm__node .ddd-perm__node { margin: 0 0 6px; border-style: dashed; }
+        .ddd-perm__head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+        .ddd-perm__toggle { flex: 1; display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 0; text-align: left; color: inherit; font-weight: 600; cursor: pointer; }
+        .ddd-perm__node .ddd-perm__node .ddd-perm__toggle { font-weight: 500; }
+        .ddd-perm__chevron { width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .15s; opacity: .6; }
+        .ddd-perm__node.is-open > .ddd-perm__head .ddd-perm__chevron { transform: rotate(45deg); }
+        .ddd-perm__name::first-letter { text-transform: uppercase; }
+        .ddd-perm__count { font-size: 12px; color: var(--tblr-secondary); font-variant-numeric: tabular-nums; }
+        .ddd-perm__node.has-selection > .ddd-perm__head .ddd-perm__count { color: var(--tblr-primary); font-weight: 600; }
+        .ddd-perm__body { padding: 0 12px 10px 34px; }
+        .ddd-perm__leaves { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 2px 16px; padding-top: 4px; }
+        .ddd-perm__leaf { margin: 0; font-size: 13px; }
+        .ddd-perm-summary__total { font-size: 14px; margin-bottom: 12px; }
+        .ddd-perm-summary__total strong { font-size: 22px; margin-right: 4px; }
+        .ddd-perm-summary__list { list-style: none; padding: 0; margin: 0; }
+        .ddd-perm-summary__list li + li { margin-top: 10px; }
+        .ddd-perm-summary__row { display: flex; justify-content: space-between; gap: 8px; width: 100%; border: 0; background: none; padding: 0; color: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+        .ddd-perm-summary__row span:first-child::first-letter { text-transform: uppercase; }
+        .ddd-perm-summary__bar { height: 4px; border-radius: 2px; background: var(--tblr-border-color); margin: 4px 0; overflow: hidden; }
+        .ddd-perm-summary__bar span { display: block; height: 100%; background: var(--tblr-primary); }
+        .ddd-perm-summary__detail { font-size: 12px; color: var(--tblr-secondary); }
+        .ddd-column:has(.ddd-perm-summary) { position: sticky; top: 1rem; align-self: flex-start; }
+    </style>
+    <script>
+    (() => {
+        const init = () => {
+            const root = document.getElementById({{ id|json_encode|raw }});
+            if (!root || root.dataset.ready) return;
+            root.dataset.ready = '1';
+            const nodes = [...root.querySelectorAll('[data-node]')];
+            const head = (node, selector) => node.querySelector(':scope > .ddd-perm__head ' + selector);
+            const body = (node) => node.querySelector(':scope > [data-body]');
+            const boxes = (node) => [...node.querySelectorAll('[data-leaf] input')];
+            const setOpen = (node, open) => {
+                body(node).hidden = !open;
+                head(node, '[data-toggle]').setAttribute('aria-expanded', String(open));
+                node.classList.toggle('is-open', open);
+            };
+            const counts = (node) => {
+                const all = boxes(node);
+                return [all.filter((box) => box.checked).length, all.length];
+            };
+
+            const summary = document.querySelector('[data-ddd-perm-summary="' + root.id + '"]');
+            const renderSummary = () => {
+                if (!summary) return;
+                const list = summary.querySelector('[data-list]');
+                const allBoxes = boxes(root);
+                summary.querySelector('[data-total]').textContent = String(allBoxes.filter((box) => box.checked).length);
+                summary.querySelector('[data-all-count]').textContent = String(allBoxes.length);
+                list.replaceChildren();
+                nodes.filter((node) => node.dataset.depth === '0').forEach((context) => {
+                    const [ticked, total] = counts(context);
+                    if (ticked === 0) return;
+                    const item = document.createElement('li');
+                    const row = document.createElement('button');
+                    row.type = 'button';
+                    row.className = 'ddd-perm-summary__row';
+                    row.dataset.target = context.dataset.key;
+                    const name = document.createElement('span');
+                    name.textContent = context.dataset.label;
+                    const count = document.createElement('span');
+                    count.textContent = ticked === total ? summary.dataset.full : ticked + ' / ' + total;
+                    row.append(name, count);
+                    const bar = document.createElement('div');
+                    bar.className = 'ddd-perm-summary__bar';
+                    const fill = document.createElement('span');
+                    fill.style.width = (100 * ticked / total) + '%';
+                    bar.append(fill);
+                    item.append(row, bar);
+                    if (ticked < total) {
+                        // What a partial context grants: its objects and loose permissions.
+                        const parts = [];
+                        context.querySelectorAll(':scope > [data-body] > [data-node]').forEach((object) => {
+                            const [t, n] = counts(object);
+                            if (t > 0) parts.push(object.dataset.label + (t === n ? '' : ' ' + t + '/' + n));
+                        });
+                        context.querySelectorAll(':scope > [data-body] > .ddd-perm__leaves [data-leaf]').forEach((leaf) => {
+                            if (leaf.querySelector('input').checked) parts.push(leaf.textContent.trim());
+                        });
+                        const detail = document.createElement('div');
+                        detail.className = 'ddd-perm-summary__detail';
+                        detail.textContent = parts.join(' · ');
+                        item.append(detail);
+                    }
+                    list.append(item);
+                });
+                summary.querySelector('[data-none]').hidden = list.children.length > 0;
+            };
+
+            const refresh = () => {
+                nodes.forEach((node) => {
+                    const [ticked, total] = counts(node);
+                    const all = head(node, '[data-all]');
+                    all.checked = total > 0 && ticked === total;
+                    all.indeterminate = ticked > 0 && ticked < total;
+                    head(node, '[data-count]').textContent = ticked + ' / ' + total;
+                    node.classList.toggle('has-selection', ticked > 0);
+                });
+                renderSummary();
+            };
+
+            root.addEventListener('change', (event) => {
+                if (event.target.matches('[data-all]')) {
+                    boxes(event.target.closest('[data-node]')).forEach((box) => {
+                        if (!box.disabled && !box.closest('[data-leaf]').hidden) box.checked = event.target.checked;
+                    });
+                }
+                refresh();
+            });
+            root.addEventListener('click', (event) => {
+                const toggle = event.target.closest('[data-toggle]');
+                if (toggle) {
+                    const node = toggle.closest('[data-node]');
+                    setOpen(node, body(node).hidden);
+                }
+                if (event.target.closest('[data-expand-all]')) nodes.forEach((node) => setOpen(node, true));
+                if (event.target.closest('[data-collapse-all]')) nodes.forEach((node) => setOpen(node, false));
+            });
+
+            const filter = root.querySelector('[data-filter]');
+            filter.addEventListener('keydown', (event) => { if (event.key === 'Enter') event.preventDefault(); });
+            filter.addEventListener('input', () => {
+                const query = filter.value.trim().toLowerCase();
+                root.querySelectorAll('[data-leaf]').forEach((leaf) => {
+                    const path = [];
+                    for (let node = leaf.closest('[data-node]'); node; node = node.parentElement.closest('[data-node]')) path.push(node.dataset.label);
+                    leaf.hidden = query !== '' && !(leaf.dataset.search + ' ' + path.join(' ')).toLowerCase().includes(query);
+                });
+                nodes.forEach((node) => {
+                    const visible = [...node.querySelectorAll('[data-leaf]')].some((leaf) => !leaf.hidden);
+                    node.hidden = !visible;
+                    setOpen(node, query !== '' && visible);
+                });
+                root.querySelector('[data-no-match]').hidden = nodes.some((node) => !node.hidden);
+            });
+
+            summary?.addEventListener('click', (event) => {
+                const row = event.target.closest('[data-target]');
+                if (!row) return;
+                const node = nodes.find((candidate) => candidate.dataset.key === row.dataset.target);
+                if (!node) return;
+                setOpen(node, true);
+                node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+
+            nodes.forEach((node) => setOpen(node, false));
+            refresh();
+        };
+        // The summary card comes later in the page.
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+    })();
+    </script>
+{% endblock %}
+
+{% block ddd_iam_permission_summary_widget %}
+    <div class="ddd-perm-summary" data-ddd-perm-summary="{{ form.parent[tree_field].vars.id }}" data-full="{{ 'iam.permission.full'|trans }}">
+        <div class="ddd-perm-summary__total"><strong data-total>–</strong> {{ 'iam.permission.total'|trans }} <span data-all-count>–</span></div>
+        <ul class="ddd-perm-summary__list" data-list></ul>
+        <p class="text-secondary small mb-0" data-none hidden>{{ 'iam.permission.none'|trans }}</p>
+        <noscript><p class="text-secondary small mb-0">{{ 'iam.permission.no_script'|trans }}</p></noscript>
+    </div>
+{% endblock %}

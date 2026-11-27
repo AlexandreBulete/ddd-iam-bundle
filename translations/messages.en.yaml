@@ -11,6 +11,7 @@ iam:
         permissions: "Permissions"
         token: "The token"
         validity: "Validity"
+        summary: "What the role grants"
     ui:
         agents: Agents
         agent: agent
@@ -55,6 +56,17 @@ iam:
         name_help: "Lowercase and underscores (project_manager). Set at creation: users carry it."
         name_format: "Lowercase letters, digits and underscores, starting with a letter."
         permissions: Permissions
+
+    permission:
+        filter: "Filter (post, publish, user…)"
+        expand_all: "Expand all"
+        collapse_all: "Collapse all"
+        select_all: "All of “%name%”"
+        no_match: "No permission matches."
+        total: "permissions out of"
+        none: "No permission: this role grants nothing."
+        full: "all"
+        no_script: "The summary updates with JavaScript."
 
     agent:
         index: Agents

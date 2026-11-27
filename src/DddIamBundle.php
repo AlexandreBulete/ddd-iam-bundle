@@ -298,5 +298,8 @@ final class DddIamBundle extends AbstractBundle
         $builder->prependExtensionConfig('sylius_resource', [
             'mapping' => ['paths' => $paths],
         ]);
+        $builder->prependExtensionConfig('twig', [
+            'form_themes' => ['@DddIam/form/permissions.html.twig'],
+        ]);
     }
 }
