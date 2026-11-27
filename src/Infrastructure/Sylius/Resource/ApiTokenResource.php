@@ -10,6 +10,8 @@ use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\IssueApiT
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\RevokeApiTokenProcessor;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Provider\ApiTokenItemProvider;
 use AlexandreBulete\DddIamBundle\Infrastructure\Symfony\Form\Type\ApiTokenType;
+use AlexandreBulete\DddSyliusBundle\Admin\View\AdminRecordInterface;
+use AlexandreBulete\DddSyliusBundle\Admin\View\StatusBadge;
 use Sylius\Resource\Metadata\AsResource;
 use Sylius\Resource\Metadata\Create;
 use Sylius\Resource\Metadata\Delete;
@@ -35,7 +37,7 @@ use Symfony\Component\Validator\Constraints as Assert;
         new Index(grid: ApiTokenGrid::class),
     ],
 )]
-final class ApiTokenResource implements ResourceInterface
+final class ApiTokenResource implements ResourceInterface, AdminRecordInterface
 {
     /** A token about to expire is flagged this long before. */
     private const EXPIRY_WARNING = 'P14D';
@@ -78,5 +80,20 @@ final class ApiTokenResource implements ResourceInterface
                 default => 'active',
             },
         );
+    }
+
+    public function adminLabel(): ?string
+    {
+        return $this->label;
+    }
+
+    public function adminStatus(): ?StatusBadge
+    {
+        return null;
+    }
+
+    public function adminPublicUrl(): ?string
+    {
+        return null;
     }
 }

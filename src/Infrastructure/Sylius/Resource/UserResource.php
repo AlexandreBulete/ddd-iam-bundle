@@ -13,6 +13,8 @@ use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\UpdateUse
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Provider\UserBulkItemsProvider;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Provider\UserItemProvider;
 use AlexandreBulete\DddIamBundle\Infrastructure\Symfony\Form\Type\UserType;
+use AlexandreBulete\DddSyliusBundle\Admin\View\AdminRecordInterface;
+use AlexandreBulete\DddSyliusBundle\Admin\View\StatusBadge;
 use Sylius\Resource\Metadata\AsResource;
 use Sylius\Resource\Metadata\BulkDelete;
 use Sylius\Resource\Metadata\Create;
@@ -53,7 +55,7 @@ use Symfony\Component\Validator\Constraints as Assert;
         new Index(grid: UserGrid::class),
     ],
 )]
-final class UserResource implements ResourceInterface
+final class UserResource implements ResourceInterface, AdminRecordInterface
 {
     /**
      * @param list<string> $roles role configuration names (`admin`), not `ROLE_ADMIN`
@@ -108,5 +110,32 @@ final class UserResource implements ResourceInterface
             status: $user->status->toEnum(),
             createdAt: $user->createdAt,
         );
+    }
+
+    public function adminLabel(): ?string
+    {
+        $name = trim(($this->firstName ?? '') . ' ' . ($this->lastName ?? ''));
+
+        return $name === '' ? $this->email : $name;
+    }
+
+    public function adminStatus(): ?StatusBadge
+    {
+        return self::statusBadge($this->status);
+    }
+
+    public function adminPublicUrl(): ?string
+    {
+        return null;
+    }
+
+    private static function statusBadge(?UserStatusEnum $status): ?StatusBadge
+    {
+        return match ($status) {
+            null => null,
+            UserStatusEnum::ACTIVE => StatusBadge::success('iam.user.status_active'),
+            UserStatusEnum::SUSPENDED => StatusBadge::warning('iam.user.status_suspended'),
+            UserStatusEnum::REVOKED => StatusBadge::danger('iam.user.status_revoked'),
+        };
     }
 }

@@ -31,9 +31,13 @@ final class RoleDefinitionType extends AbstractType
 
         $builder
             ->add('label', TextType::class, [
+                'section' => 'role',
+                'span' => 'half',
                 'label' => 'iam.role.label',
             ])
             ->add('name', TextType::class, [
+                'section' => 'role',
+                'span' => 'half',
                 'label' => 'iam.role.name',
                 'help' => 'iam.role.name_help',
                 'disabled' => !$isCreation,
@@ -41,7 +45,9 @@ final class RoleDefinitionType extends AbstractType
 
         if (!$isSystem) {
             $builder->add('permissions', ChoiceType::class, [
-                'label' => 'iam.role.permissions',
+                'section' => 'permissions',
+                // The card title names the list.
+                'label' => false,
                 'required' => false,
                 'multiple' => true,
                 'expanded' => true,
@@ -55,6 +61,10 @@ final class RoleDefinitionType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => RoleDefinitionResource::class,
+            'sections' => [
+                'role' => ['label' => 'iam.section.role'],
+                'permissions' => ['label' => 'iam.section.permissions'],
+            ],
         ]);
     }
 

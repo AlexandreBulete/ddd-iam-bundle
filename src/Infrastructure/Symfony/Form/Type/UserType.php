@@ -35,10 +35,12 @@ final class UserType extends AbstractType
 
         $builder
             ->add('email', EmailType::class, [
+                'section' => 'account',
                 'label' => 'iam.user.email',
                 'required' => true,
             ])
             ->add('password', PasswordType::class, [
+                'section' => 'account',
                 'label' => 'iam.user.password',
                 'required' => $isCreation,
                 // Never echo a hash back into the input. On update the field
@@ -47,15 +49,21 @@ final class UserType extends AbstractType
                 'help' => $isCreation ? null : 'iam.user.password_help',
             ])
             ->add('firstName', TextType::class, [
+                'section' => 'account',
+                'span' => 'half',
                 'label' => 'iam.user.first_name',
                 'required' => false,
             ])
             ->add('lastName', TextType::class, [
+                'section' => 'account',
+                'span' => 'half',
                 'label' => 'iam.user.last_name',
                 'required' => false,
             ])
             ->add('roles', ChoiceType::class, [
-                'label' => 'iam.user.roles',
+                'section' => 'roles',
+                // The card title names the list.
+                'label' => false,
                 'required' => false,
                 'multiple' => true,
                 'expanded' => true,
@@ -63,6 +71,7 @@ final class UserType extends AbstractType
                 'choice_translation_domain' => false,
             ])
             ->add('status', EnumType::class, [
+                'section' => 'status',
                 'class' => UserStatusEnum::class,
                 'label' => 'iam.user.status',
                 'required' => true,
@@ -88,6 +97,11 @@ final class UserType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => UserResource::class,
+            'sections' => [
+                'account' => ['label' => 'iam.section.account'],
+                'status' => ['label' => 'iam.section.status', 'column' => 'side'],
+                'roles' => ['label' => 'iam.section.roles', 'column' => 'side'],
+            ],
         ]);
     }
 }

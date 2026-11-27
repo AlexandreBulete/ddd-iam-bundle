@@ -11,6 +11,8 @@ use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\DeleteRol
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\UpdateRoleDefinitionProcessor;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Provider\RoleDefinitionItemProvider;
 use AlexandreBulete\DddIamBundle\Infrastructure\Symfony\Form\Type\RoleDefinitionType;
+use AlexandreBulete\DddSyliusBundle\Admin\View\AdminRecordInterface;
+use AlexandreBulete\DddSyliusBundle\Admin\View\StatusBadge;
 use Sylius\Resource\Metadata\AsResource;
 use Sylius\Resource\Metadata\Create;
 use Sylius\Resource\Metadata\Delete;
@@ -38,7 +40,7 @@ use Symfony\Component\Validator\Constraints as Assert;
         new Index(grid: RoleDefinitionGrid::class),
     ],
 )]
-final class RoleDefinitionResource implements ResourceInterface
+final class RoleDefinitionResource implements ResourceInterface, AdminRecordInterface
 {
     /**
      * @param list<string> $permissions
@@ -73,5 +75,20 @@ final class RoleDefinitionResource implements ResourceInterface
             system: $definition->system,
             permissionsSummary: $definition->system ? '∞' : (string) count($definition->permissions),
         );
+    }
+
+    public function adminLabel(): ?string
+    {
+        return $this->label;
+    }
+
+    public function adminStatus(): ?StatusBadge
+    {
+        return null;
+    }
+
+    public function adminPublicUrl(): ?string
+    {
+        return null;
     }
 }

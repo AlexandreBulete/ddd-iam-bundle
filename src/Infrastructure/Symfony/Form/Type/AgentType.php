@@ -31,15 +31,19 @@ final class AgentType extends AbstractType
 
         $builder
             ->add('name', TextType::class, [
+                'section' => 'agent',
                 'label' => 'iam.agent.name',
             ])
             ->add('description', TextareaType::class, [
+                'section' => 'agent',
                 'label' => 'iam.agent.description',
                 'required' => false,
                 'help' => 'iam.agent.description_help',
             ])
             ->add('roles', ChoiceType::class, [
-                'label' => 'iam.agent.roles',
+                'section' => 'roles',
+                // The card title names the list.
+                'label' => false,
                 'required' => false,
                 'multiple' => true,
                 'expanded' => true,
@@ -51,6 +55,7 @@ final class AgentType extends AbstractType
         // A new agent starts active; its lifecycle is an edit.
         if (!$isCreation) {
             $builder->add('status', EnumType::class, [
+                'section' => 'status',
                 'class' => UserStatusEnum::class,
                 'label' => 'iam.agent.status',
                 'choice_label' => static fn (UserStatusEnum $status): string => 'iam.user.status_' . $status->value,
@@ -75,6 +80,11 @@ final class AgentType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => AgentResource::class,
+            'sections' => [
+                'agent' => ['label' => 'iam.section.agent'],
+                'status' => ['label' => 'iam.section.status', 'column' => 'side'],
+                'roles' => ['label' => 'iam.section.roles', 'column' => 'side'],
+            ],
         ]);
     }
 }

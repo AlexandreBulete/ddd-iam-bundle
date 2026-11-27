@@ -12,6 +12,8 @@ use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\DeleteAge
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Processor\UpdateAgentProcessor;
 use AlexandreBulete\DddIamBundle\Infrastructure\Sylius\State\Provider\AgentItemProvider;
 use AlexandreBulete\DddIamBundle\Infrastructure\Symfony\Form\Type\AgentType;
+use AlexandreBulete\DddSyliusBundle\Admin\View\AdminRecordInterface;
+use AlexandreBulete\DddSyliusBundle\Admin\View\StatusBadge;
 use Sylius\Resource\Metadata\AsResource;
 use Sylius\Resource\Metadata\Create;
 use Sylius\Resource\Metadata\Delete;
@@ -39,7 +41,7 @@ use Symfony\Component\Validator\Constraints as Assert;
         new Index(grid: AgentGrid::class),
     ],
 )]
-final class AgentResource implements ResourceInterface
+final class AgentResource implements ResourceInterface, AdminRecordInterface
 {
     /**
      * @param list<string> $roles role names (`chef_de_projet`)
@@ -73,5 +75,30 @@ final class AgentResource implements ResourceInterface
             status: $agent->status->toEnum(),
             createdAt: $agent->createdAt,
         );
+    }
+
+    public function adminLabel(): ?string
+    {
+        return $this->name;
+    }
+
+    public function adminStatus(): ?StatusBadge
+    {
+        return self::statusBadge($this->status);
+    }
+
+    public function adminPublicUrl(): ?string
+    {
+        return null;
+    }
+
+    private static function statusBadge(?UserStatusEnum $status): ?StatusBadge
+    {
+        return match ($status) {
+            null => null,
+            UserStatusEnum::ACTIVE => StatusBadge::success('iam.user.status_active'),
+            UserStatusEnum::SUSPENDED => StatusBadge::warning('iam.user.status_suspended'),
+            UserStatusEnum::REVOKED => StatusBadge::danger('iam.user.status_revoked'),
+        };
     }
 }

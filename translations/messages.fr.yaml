@@ -1,4 +1,13 @@
 iam:
+    section:
+        account: "Le compte"
+        status: "Statut"
+        roles: "Rôles"
+        agent: "L’agent"
+        role: "Le rôle"
+        permissions: "Permissions"
+        token: "Le jeton"
+        validity: "Validité"
     ui:
         agents: Agents
         agent: agent

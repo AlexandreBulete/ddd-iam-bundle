@@ -12,6 +12,7 @@ use Sylius\Bundle\GridBundle\Builder\ActionGroup\ItemActionGroup;
 use Sylius\Bundle\GridBundle\Builder\ActionGroup\MainActionGroup;
 use Sylius\Bundle\GridBundle\Builder\Field\DateTimeField;
 use Sylius\Bundle\GridBundle\Builder\Field\StringField;
+use Sylius\Bundle\GridBundle\Builder\Field\TwigField;
 use Sylius\Bundle\GridBundle\Grid\AbstractGrid;
 use Sylius\Bundle\GridBundle\Grid\ResourceAwareGridInterface;
 use Sylius\Component\Grid\Builder\GridBuilderInterface;
@@ -39,7 +40,7 @@ class AgentGrid extends AbstractGrid implements ResourceAwareGridInterface
             ->addField(StringField::create('name')->setLabel('iam.agent.name')->setSortable(true))
             ->addField(StringField::create('description')->setLabel('iam.agent.description'))
             ->addField(StringField::create('rolesLabel')->setLabel('iam.agent.roles'))
-            ->addField(StringField::create('status')->setPath('status.value')->setLabel('iam.agent.status')->setSortable(true))
+            ->addField(TwigField::create('status', '@DddSylius/admin/grid/field/status.html.twig')->setPath('adminStatus')->setLabel('iam.agent.status')->setSortable(true, 'status'))
             ->addField(DateTimeField::create('createdAt')->setLabel('sylius.ui.created_at')->setSortable(true))
             ->addActionGroup(MainActionGroup::create(CreateAction::create()))
             ->addActionGroup(ItemActionGroup::create(UpdateAction::create(), DeleteAction::create()))

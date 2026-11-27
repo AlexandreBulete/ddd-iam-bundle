@@ -2,6 +2,15 @@
 # project's own catalogue. A project overrides any of them by declaring the
 # same key in its own translations/ — application catalogues win over bundles.
 iam:
+    section:
+        account: "The account"
+        status: "Status"
+        roles: "Roles"
+        agent: "The agent"
+        role: "The role"
+        permissions: "Permissions"
+        token: "The token"
+        validity: "Validity"
     ui:
         agents: Agents
         agent: agent

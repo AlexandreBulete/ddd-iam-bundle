@@ -26,15 +26,18 @@ final class ApiTokenType extends AbstractType
     {
         $builder
             ->add('agentId', ChoiceType::class, [
+                'section' => 'token',
                 'label' => 'iam.api_token.agent',
                 'choices' => $this->agentChoices(),
                 'choice_translation_domain' => false,
             ])
             ->add('label', TextType::class, [
+                'section' => 'token',
                 'label' => 'iam.api_token.label',
                 'help' => 'iam.api_token.label_help',
             ])
             ->add('lifetimeDays', ChoiceType::class, [
+                'section' => 'validity',
                 'label' => 'iam.api_token.lifetime',
                 'choices' => [
                     'iam.api_token.lifetime_30' => 30,
@@ -63,6 +66,10 @@ final class ApiTokenType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => ApiTokenResource::class,
+            'sections' => [
+                'token' => ['label' => 'iam.section.token'],
+                'validity' => ['label' => 'iam.section.validity', 'column' => 'side'],
+            ],
         ]);
     }
 }

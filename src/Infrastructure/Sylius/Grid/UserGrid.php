@@ -13,6 +13,7 @@ use Sylius\Bundle\GridBundle\Builder\ActionGroup\ItemActionGroup;
 use Sylius\Bundle\GridBundle\Builder\ActionGroup\MainActionGroup;
 use Sylius\Bundle\GridBundle\Builder\Field\DateTimeField;
 use Sylius\Bundle\GridBundle\Builder\Field\StringField;
+use Sylius\Bundle\GridBundle\Builder\Field\TwigField;
 use Sylius\Bundle\GridBundle\Builder\Filter\StringFilter;
 use Sylius\Component\Grid\Builder\GridBuilderInterface;
 use Sylius\Bundle\GridBundle\Grid\AbstractGrid;
@@ -71,12 +72,10 @@ class UserGrid extends AbstractGrid implements ResourceAwareGridInterface
                     ->setLabel('iam.user.roles'),
             )
             ->addField(
-                StringField::create('status')
-                    // The DTO holds the enum case; `.value` is the backing
-                    // string a table cell can actually render.
-                    ->setPath('status.value')
+                TwigField::create('status', '@DddSylius/admin/grid/field/status.html.twig')
+                    ->setPath('adminStatus')
                     ->setLabel('iam.user.status')
-                    ->setSortable(true),
+                    ->setSortable(true, 'status'),
             )
             ->addField(
                 DateTimeField::create('createdAt')
